@@ -10,12 +10,13 @@
     "@types/node": "^12.12.58",
     "@types/react": "^16.9.49",
     "@types/react-dom": "^16.9.8",
+    "bank-schema": "git://github.com/xpcoffee/bank-schema#master",
+    "bank-schema-parser": "git://github.com/xpcoffee/bank-schema-parser#master",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-dropzone": "^11.1.0",
     "react-scripts": "3.4.3",
-    "typescript": "^3.7.5",
-    "bank-schema": "git://github.com/xpcoffee/bank-schema#master",
-    "bank-schema-parser": "git://github.com/xpcoffee/bank-schema-parser#master"
+    "typescript": "^3.7.5"
   },
   "scripts": {
     "start": "react-scripts start",
