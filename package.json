@@ -13,7 +13,9 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.3",
-    "typescript": "^3.7.5"
+    "typescript": "^3.7.5",
+    "bank-schema": "git://github.com/xpcoffee/bank-schema#master",
+    "bank-schema-parser": "git://github.com/xpcoffee/bank-schema-parser#master"
   },
   "scripts": {
     "start": "react-scripts start",
