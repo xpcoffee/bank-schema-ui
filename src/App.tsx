@@ -120,11 +120,11 @@ function App() {
 
   return (
     <div className="App">
-      <header className="bg-gray-700 text-gray-300 text-center">
+      <header className="bg-gray-700 text-gray-300 p-2">
         <h1 className="text-4xl">bank-schema UI</h1>
       </header>
       <div className="flex justify-between" style={{ height: "100%" }}>
-        <div className="flex-grow" style={{ width: "100%" }}>
+        <div className="flex-grow p-2" style={{ width: "100%" }}>
           Display stuff
         </div>
         {toolBar}
