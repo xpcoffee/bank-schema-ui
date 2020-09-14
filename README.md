@@ -6,12 +6,9 @@ A UI for working with [bank-schema](https://github.com/xpcoffee/bank-schema) fil
 
 ## Work in progress
 
-- hook into `bank-schema-parser` to load and display data from supported bank files
 - add ability to load in vanilla `bank-schema` JSON files
 - graph balance for loaded data over time
 - graph monthly income/expendetures for loaded data over time
-- add ability to flag duplicate loaded items (e.g. if an item gets imported twice)
-- add ability to remove duplicate loaded items from loaded data (e.g. if an item gets imported twice)
 - add ability to define categories in the UI (regex on an attribute)
 - add ability to graph monthly aggregate for the categories
 - add ability to save categories (browser storage? config file?)
