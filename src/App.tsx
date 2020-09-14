@@ -225,7 +225,9 @@ function App() {
 
   const selectedFileList = (
     <div>
-      <h3>Selected files</h3>
+      <h3>
+        {state.selectedFiles?.length ? "Selected files" : "No files selected"}
+      </h3>
       <ul>{state.selectedFiles?.map(getFileRow)}</ul>
     </div>
   );
