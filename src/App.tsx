@@ -24,6 +24,7 @@ function App() {
     | { type: "selectBank"; bank: Banks }
     | { type: "selectFileType"; inputFileType: InputFileTypes }
     | { type: "selectFiles"; files: File[] }
+    | { type: "removeSelectedFile"; file: File }
     | { type: "clearSelectedFiles" };
   type TransactionMap = Record<string, Transaction>;
   type State = {
@@ -48,12 +49,26 @@ function App() {
       case "add":
         const newState = { ...state };
 
+        const nullParseLog: InfoLogEvent[] = [];
+        if (!(action.transactions.length || action.eventLogs.length)) {
+          nullParseLog.push({
+            isoTimestamp: getCurrentIsoTimestamp(),
+            source: action.source,
+            message:
+              "No results from parsing file. Do you have the right bank and file type selected?",
+          });
+        }
+
         action.transactions.reduce((state, transaction) => {
           state.transactions[transaction.hash] = transaction;
           return state;
         }, newState);
 
-        newState.eventLog = [...newState.eventLog, ...action.eventLogs];
+        newState.eventLog = [
+          ...newState.eventLog,
+          ...action.eventLogs,
+          ...nullParseLog,
+        ];
         return newState;
 
       case "selectBank":
@@ -67,6 +82,17 @@ function App() {
 
       case "clearSelectedFiles":
         return { ...state, selectedFiles: undefined };
+
+      case "removeSelectedFile":
+        if (!state.selectedFiles) {
+          return state;
+        }
+        return {
+          ...state,
+          selectedFiles: state.selectedFiles.filter(
+            (file) => file !== action.file
+          ),
+        };
     }
   }
 
@@ -113,15 +139,19 @@ function App() {
     </label>
   );
 
-  function parsingErrorsToInfoLogEvent(
-    source: string,
-    errors: string[]
-  ): InfoLogEvent[] {
-    const isoTimestamp = new Date(Date.now()).toISOString();
-    return errors.map((message) => {
-      return { isoTimestamp, source, message };
-    });
+  function getCurrentIsoTimestamp() {
+    return new Date(Date.now()).toISOString();
   }
+
+  const parsingErrorsToInfoLogEvent = useCallback(
+    (source: string, errors: string[]): InfoLogEvent[] => {
+      const isoTimestamp = getCurrentIsoTimestamp();
+      return errors.map((message) => {
+        return { isoTimestamp, source, message };
+      });
+    },
+    []
+  );
 
   const processFileContents = useCallback(
     (fileName: string, contents: string) => {
@@ -142,7 +172,7 @@ function App() {
         });
       });
     },
-    [state.inputFileBank, state.inputFileType]
+    [parsingErrorsToInfoLogEvent, state.inputFileBank, state.inputFileType]
   );
 
   const readFiles = useCallback(() => {
@@ -162,9 +192,6 @@ function App() {
   }, [processFileContents, state.selectedFiles]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length !== 1) {
-      console.log("Please only select a single file.");
-    }
     dispatch({ type: "selectFiles", files: acceptedFiles });
   }, []);
 
@@ -185,6 +212,24 @@ function App() {
     </div>
   );
 
+  function getFileRow(file: File) {
+    return (
+      <li key={file.lastModified + " " + file.name}>
+        {file.name}{" "}
+        <button onClick={() => dispatch({ type: "removeSelectedFile", file })}>
+          Remove
+        </button>
+      </li>
+    );
+  }
+
+  const selectedFileList = (
+    <div>
+      <h3>Selected files</h3>
+      <ul>{state.selectedFiles?.map(getFileRow)}</ul>
+    </div>
+  );
+
   const toolBar = (
     <div className="flex p-4 bg-gray-100" style={{ minWidth: "400px" }}>
       <div>
@@ -200,6 +245,7 @@ function App() {
           {bankSelect}
           {inputFileTypeSelect}
           {dropZone}
+          {selectedFileList}
           <div className="flex mt-2">
             <button type="submit" className="bg-blue-200 p-1 flex-1">
               Import
