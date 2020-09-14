@@ -356,7 +356,7 @@ function App() {
       <div className="flex flex-1 justify-between">
         <div className="p-2 flex flex-1 flex-col justify-between">
           <div>
-            <h2 className="text-2xl">Transactions</h2>
+            <h2 className="text-2xl">Transactions ({transactions.length})</h2>
             {transactionTable}
           </div>
           <div>
