@@ -1,4 +1,4 @@
-import React, { useCallback, useReducer } from "react";
+import React, { useCallback, useMemo, useReducer } from "react";
 import "./App.css";
 import {
   Banks,
@@ -53,7 +53,10 @@ function App() {
       case "reset":
         return initialState;
       case "add":
-        const newState = { ...state };
+        const newState: State = {
+          ...state,
+          transactions: { ...state.transactions },
+        };
 
         const nullParseLog: InfoLogEvent[] = [];
         if (!(action.transactions.length || action.eventLogs.length)) {
@@ -106,14 +109,14 @@ function App() {
     }
   }
 
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [store, dispatch] = useReducer(reducer, initialState);
 
   const bankSelect = (
     <label>
       Bank
       <select
         className="bg-gray-300 mx-4"
-        value={state.inputFileBank}
+        value={store.inputFileBank}
         onChange={(change) =>
           dispatch({ type: "selectBank", bank: change.target.value as Banks })
         }
@@ -132,7 +135,7 @@ function App() {
       Input file type
       <select
         className="bg-gray-300 mx-4"
-        value={state.inputFileType}
+        value={store.inputFileType}
         onChange={(change) =>
           dispatch({
             type: "selectFileType",
@@ -166,8 +169,8 @@ function App() {
   const processFileContents = useCallback(
     (fileName: string, contents: string) => {
       parseFromString({
-        bank: state.inputFileBank,
-        type: state.inputFileType,
+        bank: store.inputFileBank,
+        type: store.inputFileType,
         inputString: contents,
         deduplicateTransactions: true,
       }).then((statement) => {
@@ -184,16 +187,16 @@ function App() {
         });
       });
     },
-    [parsingErrorsToInfoLogEvent, state.inputFileBank, state.inputFileType]
+    [parsingErrorsToInfoLogEvent, store.inputFileBank, store.inputFileType]
   );
 
   const readFiles = useCallback(() => {
-    if (!state.selectedFiles) {
+    if (!store.selectedFiles) {
       console.error("No file selected. Please select a file first.");
       return;
     }
 
-    state.selectedFiles.forEach((file) => {
+    store.selectedFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onabort = () => console.log("file reading was aborted");
       reader.onerror = () => console.log("file reading has failed");
@@ -201,7 +204,7 @@ function App() {
         processFileContents(file.name, reader.result as string);
       reader.readAsText(file);
     });
-  }, [processFileContents, state.selectedFiles]);
+  }, [processFileContents, store.selectedFiles]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     dispatch({ type: "selectFiles", files: acceptedFiles });
@@ -238,9 +241,9 @@ function App() {
   const selectedFileList = (
     <div>
       <h3>
-        {state.selectedFiles?.length ? "Selected files" : "No files selected"}
+        {store.selectedFiles?.length ? "Selected files" : "No files selected"}
       </h3>
-      <ul>{state.selectedFiles?.map(getFileRow)}</ul>
+      <ul>{store.selectedFiles?.map(getFileRow)}</ul>
     </div>
   );
 
@@ -272,6 +275,14 @@ function App() {
     </div>
   );
 
+  const transactions = useMemo<NormalizedTransaction[]>(() => {
+    const thing = Object.values(store.transactions);
+
+    thing.sort((a, b) => (b.timeStamp > a.timeStamp ? 1 : -1));
+
+    return thing;
+  }, [store.transactions]);
+
   const transactionTable = (
     <div>
       <table className="tableAuto">
@@ -286,7 +297,7 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {Object.values(state.transactions).map((transaction, index) => {
+          {transactions.map((transaction, index) => {
             const shadeClass = index % 2 ? " bg-gray-100" : "";
 
             return (
@@ -321,7 +332,7 @@ function App() {
     <div style={{ overflowY: "auto", height: "200px" }}>
       <table className="tableAuto">
         <tbody>
-          {state.eventLog.map((event, index) => {
+          {store.eventLog.map((event, index) => {
             const shadeClass = index % 2 ? " bg-gray-100" : "";
 
             return (
