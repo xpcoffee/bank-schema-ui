@@ -245,30 +245,30 @@ function App() {
   );
 
   const toolBar = (
-    <div className="flex p-4 bg-gray-100" style={{ minWidth: "400px" }}>
-      <div>
-        <h2 className="text-2xl">Import data</h2>
-        <form
-          className="flex flex-col"
-          style={{ height: "100%" }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            readFiles();
-          }}
-        >
-          {bankSelect}
-          {inputFileTypeSelect}
-          {dropZone}
-          {selectedFileList}
-          <div className="flex mt-2">
-            <button type="submit" className="bg-blue-200 p-1 flex-1">
-              Import
-            </button>
-            <div className="flex-1"></div>
-            <div className="flex-1"></div>
-          </div>
-        </form>
-      </div>
+    <div
+      className="flex flex-col p-4 bg-gray-100"
+      style={{ minWidth: "450px" }}
+    >
+      <h2 className="text-2xl">Import data</h2>
+      <form
+        className="flex flex-col"
+        onSubmit={(e) => {
+          e.preventDefault();
+          readFiles();
+        }}
+      >
+        {bankSelect}
+        {inputFileTypeSelect}
+        {dropZone}
+        {selectedFileList}
+        <div className="flex mt-2">
+          <button type="submit" className="bg-blue-200 p-1 flex-1">
+            Import
+          </button>
+          <div className="flex-1"></div>
+          <div className="flex-1"></div>
+        </div>
+      </form>
     </div>
   );
 
@@ -318,26 +318,17 @@ function App() {
   );
 
   const eventLog = (
-    <div>
+    <div style={{ overflowY: "auto", height: "200px" }}>
       <table className="tableAuto">
-        <thead>
-          <tr>
-            <th className="border px-4 text-left">Timestamp</th>
-            <th className="border px-4 text-left">Source</th>
-            <th className="border px-4 text-left">Message</th>
-          </tr>
-        </thead>
         <tbody>
           {state.eventLog.map((event, index) => {
             const shadeClass = index % 2 ? " bg-gray-100" : "";
 
             return (
               <tr key={event.isoTimestamp + "-" + event.message}>
-                <td className={"border px-4" + shadeClass}>
-                  {event.isoTimestamp}
-                </td>
-                <td className={"border px-4" + shadeClass}>{event.source}</td>
-                <td className={"border px-4" + shadeClass}>{event.message}</td>
+                <td className={"px-4" + shadeClass}>{event.isoTimestamp}</td>
+                <td className={"px-4" + shadeClass}>{event.source}</td>
+                <td className={"px-4" + shadeClass}>{event.message}</td>
               </tr>
             );
           })}
@@ -347,16 +338,20 @@ function App() {
   );
 
   return (
-    <div className="App">
+    <div className="App flex items-stretch flex-col">
       <header className="bg-gray-700 text-gray-300 p-2">
         <h1 className="text-4xl">bank-schema UI</h1>
       </header>
-      <div className="flex justify-between" style={{ height: "100%" }}>
-        <div className="flex-grow p-2" style={{ width: "100%" }}>
-          <h2 className="text-2xl">Transactions</h2>
-          {transactionTable}
-          <h2 className="text-2xl">Event log</h2>
-          {eventLog}
+      <div className="flex flex-1 justify-between">
+        <div className="p-2 flex flex-1 flex-col justify-between">
+          <div>
+            <h2 className="text-2xl">Transactions</h2>
+            {transactionTable}
+          </div>
+          <div>
+            <h2 className="text-2xl">Event log</h2>
+            {eventLog}
+          </div>
         </div>
         {toolBar}
       </div>
