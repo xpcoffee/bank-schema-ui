@@ -13,9 +13,15 @@ function App() {
   const fileTypes = Object.values(InputFileTypes);
 
   type InfoLogEvent = { isoTimestamp: string; source: string; message: string };
+  interface NormalizedTransaction extends Transaction {
+    bank: string;
+    account: string;
+  }
   type Action =
     | {
         type: "add";
+        bank: string;
+        account: string;
         transactions: Transaction[];
         source: string;
         eventLogs: InfoLogEvent[];
@@ -26,7 +32,7 @@ function App() {
     | { type: "selectFiles"; files: File[] }
     | { type: "removeSelectedFile"; file: File }
     | { type: "clearSelectedFiles" };
-  type TransactionMap = Record<string, Transaction>;
+  type TransactionMap = Record<string, NormalizedTransaction>;
   type State = {
     transactions: TransactionMap;
     eventLog: InfoLogEvent[];
@@ -60,14 +66,18 @@ function App() {
         }
 
         action.transactions.reduce((state, transaction) => {
-          state.transactions[transaction.hash] = transaction;
+          state.transactions[transaction.hash] = {
+            ...transaction,
+            bank: action.bank,
+            account: action.account,
+          };
           return state;
         }, newState);
 
         newState.eventLog = [
-          ...newState.eventLog,
           ...action.eventLogs,
           ...nullParseLog,
+          ...newState.eventLog,
         ];
         return newState;
 
@@ -164,6 +174,8 @@ function App() {
         dispatch({
           type: "add",
           transactions: statement.transactions,
+          bank: statement.bank,
+          account: statement.account,
           source: fileName,
           eventLogs: parsingErrorsToInfoLogEvent(
             fileName,
@@ -260,6 +272,80 @@ function App() {
     </div>
   );
 
+  const transactionTable = (
+    <div>
+      <table className="tableAuto">
+        <thead>
+          <tr>
+            <th className="border px-4 text-left">Timestamp</th>
+            <th className="border px-4 text-left">Account</th>
+            <th className="border px-4 text-left">Bank</th>
+            <th className="border px-4 text-left">Description</th>
+            <th className="border px-4 text-left">Amount (ZAR)</th>
+            <th className="border px-4 text-left">Account balance (ZAR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.values(state.transactions).map((transaction, index) => {
+            const shadeClass = index % 2 ? " bg-gray-100" : "";
+
+            return (
+              <tr key={transaction.hash}>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.timeStamp}
+                </td>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.account}
+                </td>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.bank}
+                </td>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.description}
+                </td>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.amountInZAR}
+                </td>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.balance}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const eventLog = (
+    <div>
+      <table className="tableAuto">
+        <thead>
+          <tr>
+            <th className="border px-4 text-left">Timestamp</th>
+            <th className="border px-4 text-left">Source</th>
+            <th className="border px-4 text-left">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {state.eventLog.map((event, index) => {
+            const shadeClass = index % 2 ? " bg-gray-100" : "";
+
+            return (
+              <tr key={event.isoTimestamp + "-" + event.message}>
+                <td className={"border px-4" + shadeClass}>
+                  {event.isoTimestamp}
+                </td>
+                <td className={"border px-4" + shadeClass}>{event.source}</td>
+                <td className={"border px-4" + shadeClass}>{event.message}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="App">
       <header className="bg-gray-700 text-gray-300 p-2">
@@ -268,9 +354,9 @@ function App() {
       <div className="flex justify-between" style={{ height: "100%" }}>
         <div className="flex-grow p-2" style={{ width: "100%" }}>
           <h2 className="text-2xl">Transactions</h2>
-          <pre>{JSON.stringify(Object.values(state.transactions))}</pre>
+          {transactionTable}
           <h2 className="text-2xl">Event log</h2>
-          <pre>{JSON.stringify(state.eventLog)}</pre>
+          {eventLog}
         </div>
         {toolBar}
       </div>
