@@ -8,8 +8,7 @@ import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
 
 function App() {
   interface DenormalizedTransaction extends Transaction {
-    bank: string;
-    account: string;
+    bankAccount: string;
   }
   type TransactionMap = Record<string, DenormalizedTransaction>;
   type State = {
@@ -26,6 +25,17 @@ function App() {
     inputFileType: InputFileTypes.Default,
     selectedFiles: undefined,
   };
+
+  function transactionToDenormalizedTransaction(
+    transaction: Transaction,
+    bank: string,
+    account: string
+  ) {
+    return {
+      ...transaction,
+      bankAccount: bank + "/" + account,
+    };
+  }
 
   function reducer(state: State, action: Action): State {
     switch (action.type) {
@@ -48,11 +58,13 @@ function App() {
         }
 
         action.transactions.reduce((state, transaction) => {
-          state.transactions[transaction.hash] = {
-            ...transaction,
-            bank: action.bank,
-            account: action.account,
-          };
+          state.transactions[
+            transaction.hash
+          ] = transactionToDenormalizedTransaction(
+            transaction,
+            action.bank,
+            action.account
+          );
           return state;
         }, newState);
 
@@ -108,7 +120,7 @@ function App() {
   const monthlyAggregations = useMemo<MonthlyAggregation[]>(() => {
     function getKey(transaction: DenormalizedTransaction) {
       return `${getYearMonthFromTimeStamp(transaction.timeStamp)}-${
-        transaction.account
+        transaction.bankAccount
       }`;
     }
 
@@ -119,7 +131,7 @@ function App() {
 
       const aggregation: MonthlyAggregation = keyedAggregations[key] || {
         yearMonth: getYearMonthFromTimeStamp(transaction.timeStamp),
-        bankAccount: transaction.bank + "/" + transaction.account,
+        bankAccount: transaction.bankAccount,
         incomeInZAR: 0,
         expensesInZAR: 0,
       };
@@ -147,8 +159,8 @@ function App() {
           <tr>
             <th className="border px-4 text-left">Month</th>
             <th className="border px-4 text-left">Bank/Account</th>
-            <th className="border px-4 text-left">Income</th>
-            <th className="border px-4 text-left">Expenditures</th>
+            <th className="border px-4 text-left">Income (ZAR)</th>
+            <th className="border px-4 text-left">Expenditures (ZAR)</th>
           </tr>
         </thead>
         <tbody>
@@ -183,8 +195,7 @@ function App() {
         <thead>
           <tr>
             <th className="border px-4 text-left">Timestamp</th>
-            <th className="border px-4 text-left">Account</th>
-            <th className="border px-4 text-left">Bank</th>
+            <th className="border px-4 text-left">Bank account</th>
             <th className="border px-4 text-left">Description</th>
             <th className="border px-4 text-left">Amount (ZAR)</th>
             <th className="border px-4 text-left">Account balance (ZAR)</th>
@@ -200,10 +211,7 @@ function App() {
                   {transaction.timeStamp}
                 </td>
                 <td className={"border px-4" + shadeClass}>
-                  {transaction.account}
-                </td>
-                <td className={"border px-4" + shadeClass}>
-                  {transaction.bank}
+                  {transaction.bankAccount}
                 </td>
                 <td className={"border px-4" + shadeClass}>
                   {transaction.description}
