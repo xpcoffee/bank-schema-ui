@@ -4,14 +4,14 @@ import { Banks, InputFileTypes, Transaction } from "bank-schema-parser";
 import { InfoLogEvent } from "./infoLog";
 import { Action } from "./actions";
 import { Toolbar } from "./Toolbar";
-import { getCurrentIsoTimestamp } from "./time";
+import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
 
 function App() {
-  interface NormalizedTransaction extends Transaction {
+  interface DenormalizedTransaction extends Transaction {
     bank: string;
     account: string;
   }
-  type TransactionMap = Record<string, NormalizedTransaction>;
+  type TransactionMap = Record<string, DenormalizedTransaction>;
   type State = {
     transactions: TransactionMap;
     eventLog: InfoLogEvent[];
@@ -90,13 +90,92 @@ function App() {
 
   const [store, dispatch] = useReducer(reducer, initialState);
 
-  const transactions = useMemo<NormalizedTransaction[]>(() => {
+  const transactions = useMemo<DenormalizedTransaction[]>(() => {
     const thing = Object.values(store.transactions);
 
     thing.sort((a, b) => (b.timeStamp > a.timeStamp ? 1 : -1));
 
     return thing;
   }, [store.transactions]);
+
+  type MonthlyAggregation = {
+    yearMonth: string;
+    bankAccount: string;
+    incomeInZAR: number;
+    expensesInZAR: number;
+  };
+
+  const monthlyAggregations = useMemo<MonthlyAggregation[]>(() => {
+    function getKey(transaction: DenormalizedTransaction) {
+      return `${getYearMonthFromTimeStamp(transaction.timeStamp)}-${
+        transaction.account
+      }`;
+    }
+
+    const aggregationMap = transactions.reduce<
+      Record<string, MonthlyAggregation>
+    >((keyedAggregations, transaction) => {
+      const key = getKey(transaction);
+
+      const aggregation: MonthlyAggregation = keyedAggregations[key] || {
+        yearMonth: getYearMonthFromTimeStamp(transaction.timeStamp),
+        bankAccount: transaction.bank + "/" + transaction.account,
+        incomeInZAR: 0,
+        expensesInZAR: 0,
+      };
+
+      if (transaction.amountInZAR > 0) {
+        aggregation.incomeInZAR += transaction.amountInZAR;
+      } else {
+        aggregation.expensesInZAR += transaction.amountInZAR;
+      }
+
+      keyedAggregations[key] = aggregation;
+
+      return keyedAggregations;
+    }, {});
+
+    return Object.values(aggregationMap).sort((a, b) =>
+      b.yearMonth > a.yearMonth ? 1 : -1
+    );
+  }, [transactions]);
+
+  const aggregationTable = (
+    <div>
+      <table className="tableAuto">
+        <thead>
+          <tr>
+            <th className="border px-4 text-left">Month</th>
+            <th className="border px-4 text-left">Bank/Account</th>
+            <th className="border px-4 text-left">Income</th>
+            <th className="border px-4 text-left">Expenditures</th>
+          </tr>
+        </thead>
+        <tbody>
+          {monthlyAggregations.map((transaction, index) => {
+            const shadeClass = index % 2 ? " bg-gray-100" : "";
+
+            return (
+              <tr key={transaction.yearMonth + transaction.bankAccount}>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.yearMonth}
+                </td>
+                <td className={"border px-4" + shadeClass}>
+                  {transaction.bankAccount}
+                </td>
+                <td className={"border px-4 text-right" + shadeClass}>
+                  {transaction.incomeInZAR.toFixed(2)}
+                </td>
+                <td className={"border px-4 text-right" + shadeClass}>
+                  {transaction.expensesInZAR.toFixed(2)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 
   const transactionTable = (
     <div>
@@ -129,11 +208,11 @@ function App() {
                 <td className={"border px-4" + shadeClass}>
                   {transaction.description}
                 </td>
-                <td className={"border px-4" + shadeClass}>
-                  {transaction.amountInZAR}
+                <td className={"border px-4 text-right" + shadeClass}>
+                  {transaction.amountInZAR.toFixed(2)}
                 </td>
-                <td className={"border px-4" + shadeClass}>
-                  {transaction.balance}
+                <td className={"border px-4 text-right" + shadeClass}>
+                  {transaction.balance.toFixed(2)}
                 </td>
               </tr>
             );
@@ -170,6 +249,10 @@ function App() {
       </header>
       <div className="flex flex-1 justify-between">
         <div className="p-2 flex flex-1 flex-col justify-between">
+          <div>
+            <h2 className="text-2xl">Aggregation</h2>
+            {aggregationTable}
+          </div>
           <div>
             <h2 className="text-2xl">Transactions ({transactions.length})</h2>
             {transactionTable}

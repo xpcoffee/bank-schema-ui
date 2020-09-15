@@ -93,7 +93,7 @@ export const Toolbar = ({
         });
       });
     },
-    [parsingErrorsToInfoLogEvent, inputFileBank, inputFileType]
+    [inputFileBank, inputFileType, dispatch, parsingErrorsToInfoLogEvent]
   );
 
   const readFiles = useCallback(() => {
@@ -112,9 +112,12 @@ export const Toolbar = ({
     });
   }, [processFileContents, selectedFiles]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    dispatch({ type: "selectFiles", files: acceptedFiles });
-  }, []);
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      dispatch({ type: "selectFiles", files: acceptedFiles });
+    },
+    [dispatch]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
