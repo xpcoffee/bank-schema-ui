@@ -1,10 +1,11 @@
 import React, { useMemo, useReducer } from "react";
 import "./App.css";
-import { Banks, InputFileTypes, Transaction } from "bank-schema-parser";
+import { Transaction } from "@xpcoffee/bank-schema-parser";
 import { InfoLogEvent } from "./infoLog";
 import { Action } from "./actions";
 import { Toolbar } from "./Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
+import { KeyedFile, toKeyedFile } from "./file";
 
 function App() {
   interface DenormalizedTransaction extends Transaction {
@@ -14,15 +15,11 @@ function App() {
   type State = {
     transactions: TransactionMap;
     eventLog: InfoLogEvent[];
-    inputFileBank: Banks;
-    inputFileType: InputFileTypes;
-    selectedFiles: File[] | undefined;
+    selectedFiles: KeyedFile[] | undefined;
   };
   const initialState: State = {
     transactions: {},
     eventLog: [],
-    inputFileBank: Banks.StandardBank,
-    inputFileType: InputFileTypes.Default,
     selectedFiles: undefined,
   };
 
@@ -75,14 +72,22 @@ function App() {
         ];
         return newState;
 
-      case "selectBank":
-        return { ...state, inputFileBank: action.bank };
-
-      case "selectFileType":
-        return { ...state, inputFileType: action.inputFileType };
-
       case "selectFiles":
-        return { ...state, selectedFiles: action.files };
+        return {
+          ...state,
+          selectedFiles: action.files.map((file) => toKeyedFile(file)),
+        };
+
+      case "updateFile":
+        const selectedFiles = state.selectedFiles?.map((keyedFile) => {
+          return action.update.key === keyedFile.key
+            ? { ...keyedFile, ...action.update }
+            : keyedFile;
+        });
+        return {
+          ...state,
+          selectedFiles,
+        };
 
       case "clearSelectedFiles":
         return { ...state, selectedFiles: undefined };
@@ -94,7 +99,7 @@ function App() {
         return {
           ...state,
           selectedFiles: state.selectedFiles.filter(
-            (file) => file !== action.file
+            (keyedFile) => keyedFile.key !== action.key
           ),
         };
     }
@@ -270,12 +275,7 @@ function App() {
             {eventLog}
           </div>
         </div>
-        <Toolbar
-          inputFileBank={store.inputFileBank}
-          inputFileType={store.inputFileType}
-          selectedFiles={store.selectedFiles}
-          dispatch={dispatch}
-        />
+        <Toolbar selectedFiles={store.selectedFiles} dispatch={dispatch} />
       </div>
     </div>
   );
