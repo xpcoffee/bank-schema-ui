@@ -1,4 +1,5 @@
-import { Transaction, Banks, InputFileTypes } from "bank-schema-parser";
+import { Transaction } from "bank-schema-parser";
+import { KeyedFile, KeyedFileUpdate } from "./file";
 import { InfoLogEvent } from "./infoLog";
 
 export type Action =
@@ -11,8 +12,7 @@ export type Action =
       eventLogs: InfoLogEvent[];
     }
   | { type: "reset" }
-  | { type: "selectBank"; bank: Banks }
-  | { type: "selectFileType"; inputFileType: InputFileTypes }
   | { type: "selectFiles"; files: File[] }
-  | { type: "removeSelectedFile"; file: File }
+  | { type: "updateFile"; update: KeyedFileUpdate }
+  | { type: "removeSelectedFile"; key: string }
   | { type: "clearSelectedFiles" };

@@ -1,26 +1,17 @@
-import { Banks, InputFileTypes, parseFromString } from "bank-schema-parser";
+import { parseFromString, fileTypes, FileType } from "bank-schema-parser";
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Action } from "./actions";
+import { getFileKey, KeyedFile } from "./file";
 import { InfoLogEvent } from "./infoLog";
 import { getCurrentIsoTimestamp } from "./time";
 
 type Props = {
-  inputFileBank: Banks;
-  inputFileType: InputFileTypes;
-  selectedFiles: File[] | undefined;
+  selectedFiles: KeyedFile[] | undefined;
   dispatch: React.Dispatch<Action>;
 };
 
-export const Toolbar = ({
-  inputFileBank,
-  inputFileType,
-  selectedFiles,
-  dispatch,
-}: Props) => {
-  const banks = Object.values(Banks);
-  const fileTypes = Object.values(InputFileTypes);
-
+export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
   const parsingErrorsToInfoLogEvent = useCallback(
     (source: string, errors: string[]): InfoLogEvent[] => {
       const isoTimestamp = getCurrentIsoTimestamp();
@@ -31,52 +22,10 @@ export const Toolbar = ({
     []
   );
 
-  const bankSelect = (
-    <label>
-      Bank
-      <select
-        className="bg-gray-300 mx-4"
-        value={inputFileBank}
-        onChange={(change) =>
-          dispatch({ type: "selectBank", bank: change.target.value as Banks })
-        }
-      >
-        {banks.map((bank) => (
-          <option key={bank} value={bank}>
-            {bank}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-
-  const inputFileTypeSelect = (
-    <label>
-      Input file type
-      <select
-        className="bg-gray-300 mx-4"
-        value={inputFileType}
-        onChange={(change) =>
-          dispatch({
-            type: "selectFileType",
-            inputFileType: change.target.value as InputFileTypes,
-          })
-        }
-      >
-        {fileTypes.map((type) => (
-          <option key={type} value={type}>
-            {type}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-
   const processFileContents = useCallback(
-    (fileName: string, contents: string) => {
+    (fileName: string, fileType: FileType, contents: string) => {
       parseFromString({
-        bank: inputFileBank,
-        type: inputFileType,
+        fileType,
         inputString: contents,
         deduplicateTransactions: true,
       }).then((statement) => {
@@ -93,7 +42,7 @@ export const Toolbar = ({
         });
       });
     },
-    [inputFileBank, inputFileType, dispatch, parsingErrorsToInfoLogEvent]
+    [dispatch, parsingErrorsToInfoLogEvent]
   );
 
   const readFiles = useCallback(() => {
@@ -102,13 +51,17 @@ export const Toolbar = ({
       return;
     }
 
-    selectedFiles.forEach((file) => {
+    selectedFiles.forEach((keyedFile) => {
       const reader = new FileReader();
       reader.onabort = () => console.log("file reading was aborted");
       reader.onerror = () => console.log("file reading has failed");
       reader.onload = () =>
-        processFileContents(file.name, reader.result as string);
-      reader.readAsText(file);
+        processFileContents(
+          keyedFile.file.name,
+          keyedFile.fileType,
+          reader.result as string
+        );
+      reader.readAsText(keyedFile.file);
     });
   }, [processFileContents, selectedFiles]);
 
@@ -136,11 +89,43 @@ export const Toolbar = ({
     </div>
   );
 
-  function getFileRow(file: File) {
+  function getFileTypeSelect(keyedFile: KeyedFile) {
     return (
-      <li key={file.lastModified + " " + file.name}>
-        {file.name}{" "}
-        <button onClick={() => dispatch({ type: "removeSelectedFile", file })}>
+      <label>
+        Input file type
+        <select
+          className="bg-gray-300 mx-4"
+          value={keyedFile.fileType}
+          onChange={(change) =>
+            dispatch({
+              type: "updateFile",
+              update: {
+                key: getFileKey(keyedFile.file),
+                fileType: change.target.value as FileType,
+              },
+            })
+          }
+        >
+          {fileTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  function getFileRow(keyedFile: KeyedFile) {
+    return (
+      <li key={keyedFile.key}>
+        <span className="mx-4">{keyedFile.file.name}</span>
+        <span className="mx-4">{getFileTypeSelect(keyedFile)}</span>
+        <button
+          onClick={() =>
+            dispatch({ type: "removeSelectedFile", key: keyedFile.key })
+          }
+        >
           Remove
         </button>
       </li>
@@ -167,8 +152,6 @@ export const Toolbar = ({
           readFiles();
         }}
       >
-        {bankSelect}
-        {inputFileTypeSelect}
         {dropZone}
         {selectedFileList}
         <div className="flex mt-2">
