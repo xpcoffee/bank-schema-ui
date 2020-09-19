@@ -1,5 +1,5 @@
 import { Transaction } from "@xpcoffee/bank-schema-parser";
-import { KeyedFile, KeyedFileUpdate } from "./file";
+import { KeyedFileUpdate } from "./file";
 import { InfoLogEvent } from "./infoLog";
 
 export type Action =
@@ -15,4 +15,5 @@ export type Action =
   | { type: "selectFiles"; files: File[] }
   | { type: "updateFile"; update: KeyedFileUpdate }
   | { type: "removeSelectedFile"; key: string }
-  | { type: "clearSelectedFiles" };
+  | { type: "clearSelectedFiles" }
+  | { type: "updateAggregateFilter"; filter: string };
