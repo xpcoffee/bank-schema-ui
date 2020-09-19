@@ -11,7 +11,7 @@ export type Action =
       source: string;
       eventLogs: InfoLogEvent[];
     }
-  | { type: "reset" }
+  | { type: "clearData" }
   | { type: "selectFiles"; files: File[] }
   | { type: "updateFile"; update: KeyedFileUpdate }
   | { type: "removeSelectedFile"; key: string }

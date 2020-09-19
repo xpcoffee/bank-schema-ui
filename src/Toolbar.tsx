@@ -152,6 +152,10 @@ export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
     [dispatch, readFiles]
   );
 
+  const clearData = useCallback(() => {
+    dispatch({ type: "clearData" });
+  }, [dispatch]);
+
   return (
     <div
       className="flex flex-col p-4 bg-gray-100"
@@ -169,6 +173,14 @@ export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
           <div className="flex-1"></div>
         </div>
       </form>
+      <h2 className="text-2xl">Clear data</h2>
+      <div className="flex mt-2">
+        <button onClick={clearData} className="bg-red-200 p-1 flex-1">
+          Clear all data
+        </button>
+        <div className="flex-1"></div>
+        <div className="flex-1"></div>
+      </div>
     </div>
   );
 };

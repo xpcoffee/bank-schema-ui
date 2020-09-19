@@ -36,8 +36,11 @@ function App() {
 
   function reducer(state: State, action: Action): State {
     switch (action.type) {
-      case "reset":
-        return initialState;
+      case "clearData":
+        return {
+          ...state,
+          transactions: {},
+        };
       case "add":
         const newState: State = {
           ...state,
