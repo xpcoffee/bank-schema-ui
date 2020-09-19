@@ -143,19 +143,22 @@ export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
     </div>
   );
 
+  const onSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      readFiles();
+      dispatch({ type: "clearSelectedFiles" });
+    },
+    [dispatch, readFiles]
+  );
+
   return (
     <div
       className="flex flex-col p-4 bg-gray-100"
       style={{ minWidth: "450px" }}
     >
       <h2 className="text-2xl">Import data</h2>
-      <form
-        className="flex flex-col"
-        onSubmit={(e) => {
-          e.preventDefault();
-          readFiles();
-        }}
-      >
+      <form className="flex flex-col" onSubmit={onSubmit}>
         {dropZone}
         {selectedFileList}
         <div className="flex mt-2">
