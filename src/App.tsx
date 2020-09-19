@@ -221,6 +221,20 @@ function App() {
     </div>
   );
 
+  const filteredTransactions = useMemo<DenormalizedTransaction[]>(() => {
+    const predicate = (aggregation: DenormalizedTransaction) => {
+      if (
+        StaticBankAccountAggregateFilters.All === store.aggregateFilter ||
+        TOTAL_ACCOUNT_AGGREGATE === store.aggregateFilter
+      ) {
+        return true;
+      }
+      return store.aggregateFilter === aggregation.bankAccount;
+    };
+
+    return transactions.filter(predicate);
+  }, [transactions, store.aggregateFilter]);
+
   const transactionTable = (
     <div>
       <table className="tableAuto">
@@ -234,7 +248,7 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {transactions.map((transaction, index) => {
+          {filteredTransactions.map((transaction, index) => {
             const shadeClass = index % 2 ? " bg-gray-100" : "";
 
             return (
