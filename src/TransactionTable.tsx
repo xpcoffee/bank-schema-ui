@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useReducer } from "react";
+import React from "react";
 import { DenormalizedTransaction } from "./types";
 
 interface Props {
@@ -6,6 +6,10 @@ interface Props {
 }
 
 export const TransactionTable = ({ transactions }: Props) => {
+  if (transactions.length === 0) {
+    return <div>No transactions to display. Please import data first.</div>;
+  }
+
   return (
     <div>
       <table className="tableAuto">
