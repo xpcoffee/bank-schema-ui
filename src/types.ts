@@ -1,4 +1,4 @@
-import { Transaction } from "@xpcoffee/bank-schema-parser";
+import { FileType, Transaction } from "@xpcoffee/bank-schema-parser";
 
 export interface DenormalizedTransaction extends Transaction {
   bankAccount: string;
@@ -16,3 +16,8 @@ export type InfoLogEvent = {
   source: string;
   message: string;
 };
+
+export type KeyedFile = { key: string; file: File; fileType: FileType };
+export interface KeyedFileUpdate extends Partial<KeyedFile> {
+  key: string;
+}

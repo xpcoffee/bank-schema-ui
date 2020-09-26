@@ -1,12 +1,8 @@
 import { FileType } from "@xpcoffee/bank-schema-parser";
+import { KeyedFile } from "./types";
 
 export function getFileKey(file: File) {
   return file.lastModified + " " + file.name;
-}
-
-export type KeyedFile = { key: string; file: File; fileType: FileType };
-export interface KeyedFileUpdate extends Partial<KeyedFile> {
-  key: string;
 }
 
 export function toKeyedFile(

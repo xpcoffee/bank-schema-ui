@@ -4,11 +4,12 @@ import { Transaction } from "@xpcoffee/bank-schema-parser";
 import { Action } from "./actions";
 import { Toolbar } from "./components/Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
-import { KeyedFile, toKeyedFile } from "./file";
+import { toKeyedFile } from "./file";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
 import {
   DenormalizedTransaction,
   InfoLogEvent,
+  KeyedFile,
   MonthlyAggregation,
 } from "./types";
 import { TransactionTable } from "./components/TransactionTable";

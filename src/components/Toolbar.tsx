@@ -6,9 +6,9 @@ import {
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Action } from "../actions";
-import { getFileKey, KeyedFile } from "../file";
+import { getFileKey } from "../file";
 import { getCurrentIsoTimestamp } from "../time";
-import { InfoLogEvent } from "../types";
+import { InfoLogEvent, KeyedFile } from "../types";
 
 type Props = {
   selectedFiles: KeyedFile[] | undefined;
