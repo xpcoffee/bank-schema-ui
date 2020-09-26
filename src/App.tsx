@@ -41,19 +41,31 @@ const INITIAL_STATE: State = {
 };
 
 function App() {
-  const views: { id: string; label: string }[] = useMemo(
+  const views = useMemo<
+    {
+      id: string;
+      label: ({
+        numberOfTransactions,
+      }: {
+        numberOfTransactions?: number;
+      }) => string;
+    }[]
+  >(
     () => [
       {
         id: "aggregations",
-        label: "Aggregations",
+        label: () => "Aggregations",
       },
       {
         id: "transactions",
-        label: "Transactions",
+        label: ({ numberOfTransactions }) =>
+          `Transactions${
+            numberOfTransactions ? `(${numberOfTransactions})` : ""
+          }`,
       },
       {
         id: "eventLog",
-        label: "Event log",
+        label: () => "Event log",
       },
     ],
     []
@@ -147,7 +159,11 @@ function App() {
                 const style = isActive ? " bg-white" : "";
                 return (
                   <Tab key={index} className={"px-4 py-1" + pointer + style}>
-                    <h2 className="text-xl">{view.label}</h2>
+                    <h2 className="text-xl">
+                      {view.label({
+                        numberOfTransactions: filteredTransactions.length,
+                      })}
+                    </h2>
                   </Tab>
                 );
               })}
