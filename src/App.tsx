@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useReducer } from "react";
 import "./App.css";
 import { Transaction } from "@xpcoffee/bank-schema-parser";
 import { Action } from "./actions";
-import { Toolbar } from "./Toolbar";
+import { Toolbar } from "./components/Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
 import { KeyedFile, toKeyedFile } from "./file";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
@@ -11,9 +11,9 @@ import {
   InfoLogEvent,
   MonthlyAggregation,
 } from "./types";
-import { TransactionTable } from "./TransactionTable";
-import { AggregationTable } from "./AggregationTable";
-import { EventLog } from "./EventLog";
+import { TransactionTable } from "./components/TransactionTable";
+import { AggregationTable } from "./components/AggregationTable";
+import { EventLog } from "./components/EventLog";
 
 type TransactionMap = Record<string, DenormalizedTransaction>;
 

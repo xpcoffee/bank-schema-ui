@@ -1,5 +1,5 @@
 import React from "react";
-import { MonthlyAggregation } from "./types";
+import { MonthlyAggregation } from "../types";
 
 interface Props {
   aggregations: MonthlyAggregation[];

@@ -1,5 +1,5 @@
 import React from "react";
-import { InfoLogEvent } from "./types";
+import { InfoLogEvent } from "../types";
 
 interface Props {
   events: InfoLogEvent[];

@@ -5,10 +5,10 @@ import {
 } from "@xpcoffee/bank-schema-parser";
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Action } from "./actions";
-import { getFileKey, KeyedFile } from "./file";
-import { getCurrentIsoTimestamp } from "./time";
-import { InfoLogEvent } from "./types";
+import { Action } from "../actions";
+import { getFileKey, KeyedFile } from "../file";
+import { getCurrentIsoTimestamp } from "../time";
+import { InfoLogEvent } from "../types";
 
 type Props = {
   selectedFiles: KeyedFile[] | undefined;

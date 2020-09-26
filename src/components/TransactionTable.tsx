@@ -1,5 +1,5 @@
 import React from "react";
-import { DenormalizedTransaction } from "./types";
+import { DenormalizedTransaction } from "../types";
 
 interface Props {
   transactions: DenormalizedTransaction[];
