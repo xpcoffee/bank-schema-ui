@@ -2,18 +2,11 @@
 
 A UI for working with [bank-schema](https://github.com/xpcoffee/bank-schema) files and with files supported by [bank-schema-parser](https://github.com/xpcoffee/bank-schema-parser).
 
-**`IMPORTANT`** Still under active development! Don't start using this yet!
+[![Netlify Status](https://api.netlify.com/api/v1/badges/aecbe8a2-dd0e-4dff-a80b-90dab61270e5/deploy-status)](https://app.netlify.com/sites/distracted-hopper-8e7d22/deploys)
 
-## Work in progress
+https://distracted-hopper-8e7d22.netlify.app
 
-- add ability to load in vanilla `bank-schema` JSON files
-- graph balance for loaded data over time
-- graph monthly income/expendetures for loaded data over time
-- add ability to define categories in the UI (regex on an attribute)
-- add ability to graph monthly aggregate for the categories
-- add ability to save categories (browser storage? config file?)
-
-## Available Scripts
+## Development
 
 In the project directory, you can run:
 
