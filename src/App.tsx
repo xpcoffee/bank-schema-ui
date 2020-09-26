@@ -7,8 +7,9 @@ import { Toolbar } from "./Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
 import { KeyedFile, toKeyedFile } from "./file";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
-import { DenormalizedTransaction } from "./types";
+import { DenormalizedTransaction, MonthlyAggregation } from "./types";
 import { TransactionTable } from "./TransactionTable";
+import { AggregationTable } from "./AggregationTable";
 
 type TransactionMap = Record<string, DenormalizedTransaction>;
 
@@ -201,43 +202,6 @@ function App() {
     [bankAccountAggregates, store.aggregateFilter]
   );
 
-  const aggregationTable = (
-    <div>
-      <table className="tableAuto">
-        <thead>
-          <tr>
-            <th className="border px-4 text-left">Month</th>
-            <th className="border px-4 text-left">Bank/Account</th>
-            <th className="border px-4 text-left">Income (ZAR)</th>
-            <th className="border px-4 text-left">Expenditures (ZAR)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredAggregations.map((aggregation, index) => {
-            const shadeClass = index % 2 ? " bg-gray-100" : "";
-
-            return (
-              <tr key={aggregation.yearMonth + aggregation.bankAccount}>
-                <td className={"border px-4" + shadeClass}>
-                  {aggregation.yearMonth}
-                </td>
-                <td className={"border px-4" + shadeClass}>
-                  {aggregation.bankAccount}
-                </td>
-                <td className={"border px-4 text-right" + shadeClass}>
-                  {aggregation.incomeInZAR.toFixed(2)}
-                </td>
-                <td className={"border px-4 text-right" + shadeClass}>
-                  {aggregation.expensesInZAR.toFixed(2)}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-
   const filteredTransactions = useMemo<DenormalizedTransaction[]>(() => {
     const predicate = (aggregation: DenormalizedTransaction) => {
       if (
@@ -301,7 +265,9 @@ function App() {
                 );
               })}
             </TabList>
-            <TabPanel className="px-2">{aggregationTable}</TabPanel>
+            <TabPanel className="px-2">
+              <AggregationTable aggregations={filteredAggregations} />
+            </TabPanel>
             <TabPanel className="px-2">
               <TransactionTable transactions={filteredTransactions} />
             </TabPanel>
@@ -315,13 +281,6 @@ function App() {
 }
 
 export default App;
-
-type MonthlyAggregation = {
-  yearMonth: string;
-  bankAccount: string;
-  incomeInZAR: number;
-  expensesInZAR: number;
-};
 
 type AggregationResult = {
   monthlyAggregations: MonthlyAggregation[];
