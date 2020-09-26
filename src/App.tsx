@@ -7,10 +7,8 @@ import { Toolbar } from "./Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
 import { KeyedFile, toKeyedFile } from "./file";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
-
-interface DenormalizedTransaction extends Transaction {
-  bankAccount: string;
-}
+import { DenormalizedTransaction } from "./types";
+import { TransactionTable } from "./TransactionTable";
 
 type TransactionMap = Record<string, DenormalizedTransaction>;
 
@@ -254,47 +252,6 @@ function App() {
     return transactions.filter(predicate);
   }, [transactions, store.aggregateFilter]);
 
-  const transactionTable = (
-    <div>
-      <table className="tableAuto">
-        <thead>
-          <tr>
-            <th className="border px-4 text-left">Timestamp</th>
-            <th className="border px-4 text-left">Bank account</th>
-            <th className="border px-4 text-left">Description</th>
-            <th className="border px-4 text-left">Amount (ZAR)</th>
-            <th className="border px-4 text-left">Account balance (ZAR)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredTransactions.map((transaction, index) => {
-            const shadeClass = index % 2 ? " bg-gray-100" : "";
-
-            return (
-              <tr key={transaction.hash}>
-                <td className={"border px-4" + shadeClass}>
-                  {transaction.timeStamp}
-                </td>
-                <td className={"border px-4" + shadeClass}>
-                  {transaction.bankAccount}
-                </td>
-                <td className={"border px-4" + shadeClass}>
-                  {transaction.description}
-                </td>
-                <td className={"border px-4 text-right" + shadeClass}>
-                  {transaction.amountInZAR.toFixed(2)}
-                </td>
-                <td className={"border px-4 text-right" + shadeClass}>
-                  {transaction.balance.toFixed(2)}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-
   const eventLog = (
     <div style={{ overflowY: "auto", height: "200px" }}>
       <table className="tableAuto">
@@ -345,7 +302,9 @@ function App() {
               })}
             </TabList>
             <TabPanel className="px-2">{aggregationTable}</TabPanel>
-            <TabPanel className="px-2">{transactionTable}</TabPanel>
+            <TabPanel className="px-2">
+              <TransactionTable transactions={filteredTransactions} />
+            </TabPanel>
             <TabPanel className="px-2">{eventLog}</TabPanel>
           </Tabs>
         </div>
