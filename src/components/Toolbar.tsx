@@ -168,7 +168,19 @@ export const Toolbar = ({
   const selectedFileList = (
     <div>
       <h3>{selectedFiles?.length ? "Selected files" : "No files selected"}</h3>
-      <ul>{selectedFiles?.map(getFileRow)}</ul>
+      <ul>
+        {selectedFiles?.map(getFileRow)}
+        {selectedFiles?.length && (
+          <li>
+            <button
+              className="flex ml-auto mt-2 font-bold"
+              onClick={() => dispatch({ type: "clearSelectedFiles" })}
+            >
+              Remove all
+            </button>
+          </li>
+        )}
+      </ul>
     </div>
   );
 
