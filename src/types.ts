@@ -21,3 +21,9 @@ export type KeyedFile = { key: string; file: File; fileType: FileType };
 export interface KeyedFileUpdate extends Partial<KeyedFile> {
   key: string;
 }
+
+export interface BalancePoint
+  extends Omit<
+    Omit<Omit<DenormalizedTransaction, "amountInZAR">, "description">,
+    "hash"
+  > {}
