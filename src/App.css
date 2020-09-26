@@ -1,4 +1,11 @@
 html, body, #root, #root>div {
-  height: 100%;
   margin: 0;
+  position: absolute;
+}
+
+@media (min-width: 760px) {
+  html, body, #root, #root>div {
+    position: relative;
+    height: 100%;
+  }
 }

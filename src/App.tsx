@@ -226,7 +226,7 @@ function App() {
       <header className="bg-gray-700 p-2">
         <h1 className="text-2xl text-white">bank-schema</h1>
       </header>
-      <div className="flex flex-1 justify-between">
+      <div className="flex flex-1 flex-col-reverse lg:flex-row justify-between">
         <div className="flex flex-1 flex-col">
           <div className="p-2 bg-gray-300">
             <h2 className="text-xl">Filters</h2>
