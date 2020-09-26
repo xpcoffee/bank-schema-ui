@@ -244,7 +244,7 @@ function App() {
                 const pointer = isActive ? "" : " cursor-pointer";
                 const style = isActive ? " bg-white" : "";
                 return (
-                  <Tab className={"px-4 py-1" + pointer + style}>
+                  <Tab key={index} className={"px-4 py-1" + pointer + style}>
                     <h2 className="text-xl">{view.label}</h2>
                   </Tab>
                 );
