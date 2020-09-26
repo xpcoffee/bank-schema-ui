@@ -11,11 +11,16 @@ import { getCurrentIsoTimestamp } from "../time";
 import { InfoLogEvent, KeyedFile } from "../types";
 
 type Props = {
+  defaultFileType: FileType;
   selectedFiles: KeyedFile[] | undefined;
   dispatch: React.Dispatch<Action>;
 };
 
-export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
+export const Toolbar = ({
+  selectedFiles,
+  dispatch,
+  defaultFileType,
+}: Props) => {
   const parsingErrorsToInfoLogEvent = useCallback(
     (source: string, errors: string[]): InfoLogEvent[] => {
       const isoTimestamp = getCurrentIsoTimestamp();
@@ -93,6 +98,30 @@ export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
     </div>
   );
 
+  function getDefaultFileTypeSelect(defaultFileType: FileType) {
+    return (
+      <label>
+        Default file type (files you select will initially have this file type)
+        <select
+          className="bg-gray-300 mx-4"
+          value={defaultFileType}
+          onChange={(change) =>
+            dispatch({
+              type: "updateDefaultFileType",
+              fileType: change.target.value as FileType,
+            })
+          }
+        >
+          {fileTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
   function getFileTypeSelect(keyedFile: KeyedFile) {
     return (
       <label>
@@ -165,6 +194,7 @@ export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
     >
       <h2 className="text-2xl">Import data</h2>
       <form className="flex flex-col" onSubmit={onSubmit}>
+        {getDefaultFileTypeSelect(defaultFileType)}
         {dropZone}
         {selectedFileList}
         <div className="flex mt-2">

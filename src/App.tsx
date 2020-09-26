@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useReducer } from "react";
 import "./App.css";
-import { Transaction } from "@xpcoffee/bank-schema-parser";
+import { FileType, fileTypes, Transaction } from "@xpcoffee/bank-schema-parser";
 import { Action } from "./actions";
 import { Toolbar } from "./components/Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
@@ -28,6 +28,7 @@ type State = {
   selectedFiles: KeyedFile[] | undefined;
   aggregateFilter: string;
   viewIndex: number;
+  defaultFileType: FileType;
 };
 
 const INITIAL_STATE: State = {
@@ -36,20 +37,10 @@ const INITIAL_STATE: State = {
   eventLog: [],
   selectedFiles: undefined,
   viewIndex: 0,
+  defaultFileType: "FNB-Default",
 };
 
 function App() {
-  function transactionToDenormalizedTransaction(
-    transaction: Transaction,
-    bank: string,
-    account: string
-  ) {
-    return {
-      ...transaction,
-      bankAccount: bank + "/" + account,
-    };
-  }
-
   const views: { id: string; label: string }[] = useMemo(
     () => [
       {
@@ -68,96 +59,7 @@ function App() {
     []
   );
 
-  function reducer(state: State, action: Action): State {
-    switch (action.type) {
-      case "clearData":
-        return {
-          ...state,
-          transactions: {},
-          aggregateFilter: StaticBankAccountAggregateFilters.All,
-        };
-
-      case "add":
-        const newState: State = {
-          ...state,
-          transactions: { ...state.transactions },
-          aggregateFilter: StaticBankAccountAggregateFilters.All,
-        };
-
-        const nullParseLog: InfoLogEvent[] = [];
-        if (!(action.transactions.length || action.eventLogs.length)) {
-          nullParseLog.push({
-            isoTimestamp: getCurrentIsoTimestamp(),
-            source: action.source,
-            message:
-              "No results from parsing file. Do you have the right bank and file type selected?",
-          });
-        }
-
-        action.transactions.reduce((state, transaction) => {
-          state.transactions[
-            transaction.hash
-          ] = transactionToDenormalizedTransaction(
-            transaction,
-            action.bank,
-            action.account
-          );
-          return state;
-        }, newState);
-
-        newState.eventLog = [
-          ...action.eventLogs,
-          ...nullParseLog,
-          ...newState.eventLog,
-        ];
-        return newState;
-
-      case "selectFiles":
-        return {
-          ...state,
-          selectedFiles: action.files.map((file) => toKeyedFile(file)),
-        };
-
-      case "updateFile":
-        const selectedFiles = state.selectedFiles?.map((keyedFile) => {
-          return action.update.key === keyedFile.key
-            ? { ...keyedFile, ...action.update }
-            : keyedFile;
-        });
-        return {
-          ...state,
-          selectedFiles,
-        };
-
-      case "clearSelectedFiles":
-        return { ...state, selectedFiles: undefined };
-
-      case "removeSelectedFile":
-        if (!state.selectedFiles) {
-          return state;
-        }
-        return {
-          ...state,
-          selectedFiles: state.selectedFiles.filter(
-            (keyedFile) => keyedFile.key !== action.key
-          ),
-        };
-
-      case "updateAggregateFilter":
-        return {
-          ...state,
-          aggregateFilter: action.filter,
-        };
-
-      case "updateViewIndex":
-        return {
-          ...state,
-          viewIndex: action.index,
-        };
-    }
-  }
-
-  const [store, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const [store, dispatch] = useReducer(appReducer, INITIAL_STATE);
 
   const transactions = useMemo<DenormalizedTransaction[]>(() => {
     const thing = Object.values(store.transactions);
@@ -261,7 +163,11 @@ function App() {
             </TabPanel>
           </Tabs>
         </div>
-        <Toolbar selectedFiles={store.selectedFiles} dispatch={dispatch} />
+        <Toolbar
+          selectedFiles={store.selectedFiles}
+          dispatch={dispatch}
+          defaultFileType={store.defaultFileType}
+        />
       </div>
     </div>
   );
@@ -355,4 +261,112 @@ function getAccountKey(transaction: DenormalizedTransaction) {
 
 function getTotalKey(transaction: DenormalizedTransaction) {
   return `${getYearMonthFromTimeStamp(transaction.timeStamp)}-total`;
+}
+
+function appReducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "clearData":
+      return {
+        ...state,
+        transactions: {},
+        aggregateFilter: StaticBankAccountAggregateFilters.All,
+      };
+
+    case "add":
+      const newState: State = {
+        ...state,
+        transactions: { ...state.transactions },
+        aggregateFilter: StaticBankAccountAggregateFilters.All,
+      };
+
+      const nullParseLog: InfoLogEvent[] = [];
+      if (!(action.transactions.length || action.eventLogs.length)) {
+        nullParseLog.push({
+          isoTimestamp: getCurrentIsoTimestamp(),
+          source: action.source,
+          message:
+            "No results from parsing file. Do you have the right bank and file type selected?",
+        });
+      }
+
+      action.transactions.reduce((state, transaction) => {
+        state.transactions[
+          transaction.hash
+        ] = transactionToDenormalizedTransaction(
+          transaction,
+          action.bank,
+          action.account
+        );
+        return state;
+      }, newState);
+
+      newState.eventLog = [
+        ...action.eventLogs,
+        ...nullParseLog,
+        ...newState.eventLog,
+      ];
+      return newState;
+
+    case "selectFiles":
+      return {
+        ...state,
+        selectedFiles: action.files.map((file) =>
+          toKeyedFile(file, state.defaultFileType)
+        ),
+      };
+
+    case "updateFile":
+      const selectedFiles = state.selectedFiles?.map((keyedFile) => {
+        return action.update.key === keyedFile.key
+          ? { ...keyedFile, ...action.update }
+          : keyedFile;
+      });
+      return {
+        ...state,
+        selectedFiles,
+      };
+
+    case "clearSelectedFiles":
+      return { ...state, selectedFiles: undefined };
+
+    case "removeSelectedFile":
+      if (!state.selectedFiles) {
+        return state;
+      }
+      return {
+        ...state,
+        selectedFiles: state.selectedFiles.filter(
+          (keyedFile) => keyedFile.key !== action.key
+        ),
+      };
+
+    case "updateAggregateFilter":
+      return {
+        ...state,
+        aggregateFilter: action.filter,
+      };
+
+    case "updateViewIndex":
+      return {
+        ...state,
+        viewIndex: action.index,
+      };
+
+    case "updateDefaultFileType":
+      return {
+        ...state,
+        defaultFileType: action.fileType,
+      };
+  }
+}
+
+function transactionToDenormalizedTransaction(
+  transaction: Transaction,
+  bank: string,
+  account: string
+) {
+  return {
+    ...transaction,
+    bankAccount: bank + "/" + account,
+  };
 }
