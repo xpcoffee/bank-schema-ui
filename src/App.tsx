@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useReducer } from "react";
 import "./App.css";
-import { FileType, fileTypes, Transaction } from "@xpcoffee/bank-schema-parser";
+import { FileType, Transaction } from "@xpcoffee/bank-schema-parser";
 import { Action } from "./actions";
 import { Toolbar } from "./components/Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
