@@ -223,7 +223,7 @@ function App() {
 
   return (
     <div className="App flex items-stretch flex-col">
-      <header className="bg-gray-700 p-2">
+      <header className="bg-gray-700 p-2 flex items-center">
         <h1 className="text-2xl text-white">bank-schema</h1>
       </header>
       <div className="flex flex-1 flex-col-reverse lg:flex-row justify-between">
