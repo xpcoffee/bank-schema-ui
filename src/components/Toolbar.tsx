@@ -156,6 +156,8 @@ export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
     dispatch({ type: "clearData" });
   }, [dispatch]);
 
+  const importDisabled = (selectedFiles?.length || 0) === 0;
+
   return (
     <div
       className="flex flex-col p-4 bg-gray-100"
@@ -166,7 +168,13 @@ export const Toolbar = ({ selectedFiles, dispatch }: Props) => {
         {dropZone}
         {selectedFileList}
         <div className="flex mt-2">
-          <button type="submit" className="bg-blue-200 p-1 flex-1">
+          <button
+            disabled={importDisabled}
+            type="submit"
+            className={
+              "p-1 flex-1" + (importDisabled ? " bg-gray-200" : " bg-blue-200")
+            }
+          >
             Import
           </button>
           <div className="flex-1"></div>
