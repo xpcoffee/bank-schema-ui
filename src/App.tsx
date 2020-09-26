@@ -6,6 +6,7 @@ import { Action } from "./actions";
 import { Toolbar } from "./Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
 import { KeyedFile, toKeyedFile } from "./file";
+import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
 
 interface DenormalizedTransaction extends Transaction {
   bankAccount: string;
@@ -22,6 +23,7 @@ type State = {
   eventLog: InfoLogEvent[];
   selectedFiles: KeyedFile[] | undefined;
   aggregateFilter: string;
+  viewIndex: number;
 };
 
 const INITIAL_STATE: State = {
@@ -29,6 +31,7 @@ const INITIAL_STATE: State = {
   aggregateFilter: StaticBankAccountAggregateFilters.All,
   eventLog: [],
   selectedFiles: undefined,
+  viewIndex: 0,
 };
 
 function App() {
@@ -42,6 +45,24 @@ function App() {
       bankAccount: bank + "/" + account,
     };
   }
+
+  const views: { id: string; label: string }[] = useMemo(
+    () => [
+      {
+        id: "aggregations",
+        label: "Aggregations",
+      },
+      {
+        id: "transactions",
+        label: "Transactions",
+      },
+      {
+        id: "eventLog",
+        label: "Event log",
+      },
+    ],
+    []
+  );
 
   function reducer(state: State, action: Action): State {
     switch (action.type) {
@@ -123,6 +144,12 @@ function App() {
           ...state,
           aggregateFilter: action.filter,
         };
+
+      case "updateViewIndex":
+        return {
+          ...state,
+          viewIndex: action.index,
+        };
     }
   }
 
@@ -185,14 +212,6 @@ function App() {
             <th className="border px-4 text-left">Bank/Account</th>
             <th className="border px-4 text-left">Income (ZAR)</th>
             <th className="border px-4 text-left">Expenditures (ZAR)</th>
-          </tr>
-          <tr>
-            <th className="border px-4 text-center">-</th>
-            <th className="border px-4 text-left">
-              {getAggregateFilterSelect()}
-            </th>
-            <th className="border px-4 text-center">-</th>
-            <th className="border px-4 text-center">-</th>
           </tr>
         </thead>
         <tbody>
@@ -298,23 +317,37 @@ function App() {
 
   return (
     <div className="App flex items-stretch flex-col">
-      <header className="bg-gray-700 text-gray-300 p-2">
-        <h1 className="text-4xl">bank-schema UI</h1>
+      <header className="bg-gray-700 p-2">
+        <h1 className="text-2xl text-white">bank-schema</h1>
       </header>
       <div className="flex flex-1 justify-between">
-        <div className="p-2 flex flex-1 flex-col justify-between">
-          <div>
-            <h2 className="text-2xl">Aggregation</h2>
-            {aggregationTable}
+        <div className="flex flex-1 flex-col">
+          <div className="p-2 bg-gray-300">
+            <h2 className="text-xl">Filters</h2>
+            <label className="flex">
+              Bank/Account
+              <div>{getAggregateFilterSelect()}</div>
+            </label>
           </div>
-          <div>
-            <h2 className="text-2xl">Transactions ({transactions.length})</h2>
-            {transactionTable}
-          </div>
-          <div>
-            <h2 className="text-2xl">Event log</h2>
-            {eventLog}
-          </div>
+          <Tabs
+            onSelect={(index) => dispatch({ type: "updateViewIndex", index })}
+          >
+            <TabList className="flex flex-row mb-4 bg-gray-300">
+              {views.map((view, index) => {
+                const isActive = store.viewIndex === index;
+                const pointer = isActive ? "" : " cursor-pointer";
+                const style = isActive ? " bg-white" : "";
+                return (
+                  <Tab className={"px-4 py-1" + pointer + style}>
+                    <h2 className="text-xl">{view.label}</h2>
+                  </Tab>
+                );
+              })}
+            </TabList>
+            <TabPanel className="px-2">{aggregationTable}</TabPanel>
+            <TabPanel className="px-2">{transactionTable}</TabPanel>
+            <TabPanel className="px-2">{eventLog}</TabPanel>
+          </Tabs>
         </div>
         <Toolbar selectedFiles={store.selectedFiles} dispatch={dispatch} />
       </div>

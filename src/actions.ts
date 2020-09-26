@@ -16,4 +16,5 @@ export type Action =
   | { type: "updateFile"; update: KeyedFileUpdate }
   | { type: "removeSelectedFile"; key: string }
   | { type: "clearSelectedFiles" }
-  | { type: "updateAggregateFilter"; filter: string };
+  | { type: "updateAggregateFilter"; filter: string }
+  | { type: "updateViewIndex"; index: number };
