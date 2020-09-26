@@ -1,15 +1,19 @@
 import React, { useCallback, useMemo, useReducer } from "react";
 import "./App.css";
 import { Transaction } from "@xpcoffee/bank-schema-parser";
-import { InfoLogEvent } from "./infoLog";
 import { Action } from "./actions";
 import { Toolbar } from "./Toolbar";
 import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
 import { KeyedFile, toKeyedFile } from "./file";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
-import { DenormalizedTransaction, MonthlyAggregation } from "./types";
+import {
+  DenormalizedTransaction,
+  InfoLogEvent,
+  MonthlyAggregation,
+} from "./types";
 import { TransactionTable } from "./TransactionTable";
 import { AggregationTable } from "./AggregationTable";
+import { EventLog } from "./EventLog";
 
 type TransactionMap = Record<string, DenormalizedTransaction>;
 
@@ -216,26 +220,6 @@ function App() {
     return transactions.filter(predicate);
   }, [transactions, store.aggregateFilter]);
 
-  const eventLog = (
-    <div style={{ overflowY: "auto", height: "200px" }}>
-      <table className="tableAuto">
-        <tbody>
-          {store.eventLog.map((event, index) => {
-            const shadeClass = index % 2 ? " bg-gray-100" : "";
-
-            return (
-              <tr key={event.isoTimestamp + "-" + event.message}>
-                <td className={"px-4" + shadeClass}>{event.isoTimestamp}</td>
-                <td className={"px-4" + shadeClass}>{event.source}</td>
-                <td className={"px-4" + shadeClass}>{event.message}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-
   return (
     <div className="App flex items-stretch flex-col">
       <header className="bg-gray-700 p-2">
@@ -271,7 +255,9 @@ function App() {
             <TabPanel className="px-2">
               <TransactionTable transactions={filteredTransactions} />
             </TabPanel>
-            <TabPanel className="px-2">{eventLog}</TabPanel>
+            <TabPanel className="px-2">
+              <EventLog events={store.eventLog} />
+            </TabPanel>
           </Tabs>
         </div>
         <Toolbar selectedFiles={store.selectedFiles} dispatch={dispatch} />

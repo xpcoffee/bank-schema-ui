@@ -10,3 +10,9 @@ export type MonthlyAggregation = {
   incomeInZAR: number;
   expensesInZAR: number;
 };
+
+export type InfoLogEvent = {
+  isoTimestamp: string;
+  source: string;
+  message: string;
+};
