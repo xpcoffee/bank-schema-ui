@@ -92,40 +92,58 @@ export const BalanceChart = ({ balanceData }: Props) => {
     })
     .y((balancePoint) => YScale(balancePoint.balance));
 
-  const oldChart = (
-    <svg width={width} height={height}>
-      <line
-        strokeWidth="1"
-        stroke="black"
-        className="axis"
-        x1={margin.left}
-        x2={margin.left + innerWidth}
-        y1={innerHeight}
-        y2={innerHeight}
-      />
-      <line
-        strokeWidth="1"
-        stroke="black"
-        className="axis"
-        x1={margin.left}
-        x2={margin.left}
-        y1={margin.bottom}
-        y2={innerHeight}
-      />
-      {accounts.map((account) => (
-        <path
-          fill="none"
-          strokeWidth="2"
-          stroke="steelblue"
-          d={line(balanceData[account]) || undefined}
-        />
-      ))}
-      <g className="axis-labels">{xTicks}</g>
-      <g className="axis-labels">{yTicks}</g>
-    </svg>
-  );
+  var accountColorPicker = d3
+    .scaleOrdinal<string>()
+    .domain(accounts)
+    .range([
+      "steelblue",
+      "green",
+      "red",
+      "yellow",
+      "black",
+      "grey",
+      "darkgreen",
+      "pink",
+      "brown",
+      "slateblue",
+      "grey1",
+      "orange",
+    ]);
 
-  return <div>{oldChart}</div>;
+  return (
+    <div>
+      <svg width={width} height={height}>
+        <line
+          strokeWidth="1"
+          stroke="black"
+          className="axis"
+          x1={margin.left}
+          x2={margin.left + innerWidth}
+          y1={innerHeight}
+          y2={innerHeight}
+        />
+        <line
+          strokeWidth="1"
+          stroke="black"
+          className="axis"
+          x1={margin.left}
+          x2={margin.left}
+          y1={margin.bottom}
+          y2={innerHeight}
+        />
+        {accounts.map((account) => (
+          <path
+            fill="none"
+            strokeWidth="2"
+            stroke={accountColorPicker(account)}
+            d={line(balanceData[account]) || undefined}
+          />
+        ))}
+        <g className="axis-labels">{xTicks}</g>
+        <g className="axis-labels">{yTicks}</g>
+      </svg>
+    </div>
+  );
 };
 
 function minMaxDates(balanceData: BankAccountBalances): [Date, Date] {
