@@ -3,11 +3,10 @@ import "./App.css";
 import { FileType, Transaction } from "@xpcoffee/bank-schema-parser";
 import { Action } from "./actions";
 import { Toolbar } from "./components/Toolbar";
-import { getCurrentIsoTimestamp, getYearMonthFromTimeStamp } from "./time";
+import { getCurrentIsoTimestamp } from "./time";
 import { toKeyedFile } from "./file";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
 import {
-  BalancePoint,
   DenormalizedTransaction,
   InfoLogEvent,
   KeyedFile,
@@ -17,26 +16,28 @@ import { TransactionTable } from "./components/TransactionTable";
 import { AggregationTable } from "./components/AggregationTable";
 import { EventLog } from "./components/EventLog";
 import { BalanceView } from "./components/BalanceView";
-import { DateTime } from "luxon";
+import { AggregationResult, aggregateTransactions } from "./aggregation";
+import { StaticBankAccountFilters } from "./accounts";
+import {
+  getBankBalances,
+  sampleLowestBalance,
+  groupByYearWeek,
+} from "./balance";
 
 type TransactionMap = Record<string, DenormalizedTransaction>;
-
-enum StaticBankAccountAggregateFilters {
-  All = "All",
-}
 
 type State = {
   transactions: TransactionMap;
   eventLog: InfoLogEvent[];
   selectedFiles: KeyedFile[] | undefined;
-  aggregateFilter: string;
+  accountFilter: string;
   viewIndex: number;
   defaultFileType: FileType;
 };
 
 const INITIAL_STATE: State = {
   transactions: {},
-  aggregateFilter: StaticBankAccountAggregateFilters.All,
+  accountFilter: StaticBankAccountFilters.All,
   eventLog: [],
   selectedFiles: undefined,
   viewIndex: 0,
@@ -88,27 +89,54 @@ function App() {
     return thing;
   }, [store.transactions]);
 
+  const filteredTransactions = useMemo<DenormalizedTransaction[]>(() => {
+    const predicate = (aggregation: DenormalizedTransaction) => {
+      if (
+        StaticBankAccountFilters.All === store.accountFilter ||
+        StaticBankAccountFilters.Total === store.accountFilter
+      ) {
+        return true;
+      }
+      return store.accountFilter === aggregation.bankAccount;
+    };
+
+    return transactions.filter(predicate);
+  }, [transactions, store.accountFilter]);
+
+  const balanceData = useMemo(
+    () =>
+      getBankBalances(
+        filteredTransactions,
+        sampleLowestBalance,
+        groupByYearWeek
+      ),
+    [filteredTransactions]
+  );
+
   // technically this is a state selector
   const { monthlyAggregations, bankAccountAggregates } = useMemo<
     AggregationResult
-  >(() => aggregateTransactions(transactions), [transactions]);
+  >(() => aggregateTransactions(filteredTransactions), [filteredTransactions]);
 
   const filteredAggregations = useMemo<MonthlyAggregation[]>(() => {
     const predicate = (aggregation: MonthlyAggregation) => {
-      if (StaticBankAccountAggregateFilters.All === store.aggregateFilter) {
+      if (StaticBankAccountFilters.All === store.accountFilter) {
         return true;
       }
-      return store.aggregateFilter === aggregation.bankAccount;
+      return store.accountFilter === aggregation.bankAccount;
     };
 
     return monthlyAggregations.filter(predicate);
-  }, [monthlyAggregations, store.aggregateFilter]);
+  }, [monthlyAggregations, store.accountFilter]);
 
-  const getAggregateFilterSelect = useCallback(
+  /**
+   * Allows guests to select a bank account to filter their views on
+   */
+  const getAccountFilterSelect = useCallback(
     () => (
       <select
         className="bg-gray-300 mx-4"
-        value={store.aggregateFilter}
+        value={store.accountFilter}
         onChange={(change) =>
           dispatch({
             type: "updateAggregateFilter",
@@ -116,7 +144,7 @@ function App() {
           })
         }
       >
-        {[StaticBankAccountAggregateFilters.All, ...bankAccountAggregates].map(
+        {[StaticBankAccountFilters.All, ...bankAccountAggregates].map(
           (aggregate) => (
             <option key={aggregate} value={aggregate}>
               {aggregate}
@@ -125,26 +153,7 @@ function App() {
         )}
       </select>
     ),
-    [bankAccountAggregates, store.aggregateFilter]
-  );
-
-  const filteredTransactions = useMemo<DenormalizedTransaction[]>(() => {
-    const predicate = (aggregation: DenormalizedTransaction) => {
-      if (
-        StaticBankAccountAggregateFilters.All === store.aggregateFilter ||
-        TOTAL_ACCOUNT_AGGREGATE === store.aggregateFilter
-      ) {
-        return true;
-      }
-      return store.aggregateFilter === aggregation.bankAccount;
-    };
-
-    return transactions.filter(predicate);
-  }, [transactions, store.aggregateFilter]);
-
-  const balanceData = useMemo(
-    () => getBankBalances(transactions, sampleLowestBalance, groupByYearWeek),
-    [transactions]
+    [bankAccountAggregates, store.accountFilter]
   );
 
   return (
@@ -158,7 +167,7 @@ function App() {
             <h2 className="text-xl">Filters</h2>
             <label className="flex">
               Bank/Account
-              <div>{getAggregateFilterSelect()}</div>
+              <div>{getAccountFilterSelect()}</div>
             </label>
           </div>
           <Tabs
@@ -206,292 +215,20 @@ function App() {
 
 export default App;
 
-type AggregationResult = {
-  monthlyAggregations: MonthlyAggregation[];
-  bankAccountAggregates: string[];
-};
-type KeyedAggregationResult = {
-  aggregationMap: Record<string, MonthlyAggregation>;
-  bankAccountAggregates: string[]; // the identifiers for aggregations
-};
-
-/**
- * Return the grouping key for a given transaction.
- */
-type GroupKeyFn = (transaction: DenormalizedTransaction) => string;
-
-/**
- * Given two transactions in the same group, which transaction should be picked as the sample?
- */
-type SamplingFn = (
-  a: DenormalizedTransaction,
-  b: DenormalizedTransaction
-) => { pick: "a" } | { pick: "b" };
-function getBankBalances(
-  transactions: DenormalizedTransaction[],
-  getSample: SamplingFn,
-  getGroupKey: GroupKeyFn
-): BalancePoint[] {
-  if (transactions.length === 0) {
-    return [];
-  }
-
-  // The beginning and end of the entire balance period
-  let startTimeStamp = transactions[0].timeStamp;
-  let endTimeStamp = transactions[0].timeStamp;
-
-  // group transactions so that the data can be sampled
-  const groups = transactions.reduce<Record<string, DenormalizedTransaction[]>>(
-    (groupedTransactions, transaction) => {
-      const key = getGroupKey(transaction);
-      if (!groupedTransactions[key]) {
-        groupedTransactions[key] = [];
-      }
-      groupedTransactions[key].push(transaction);
-
-      if (transaction.timeStamp > endTimeStamp) {
-        endTimeStamp = transaction.timeStamp;
-      }
-
-      if (transaction.timeStamp < startTimeStamp) {
-        startTimeStamp = transaction.timeStamp;
-      }
-
-      return groupedTransactions;
-    },
-    {}
-  );
-
-  // build a set of points for the balance by taking a sample for each group
-  const balancePoints = Object.keys(groups).reduce<
-    Record<string, BalancePoint[]>
-  >((balancePoints, key) => {
-    const group = groups[key];
-    const sample = group.reduce<DenormalizedTransaction>(
-      (previous, current) => {
-        if (previous === undefined) {
-          return current;
-        }
-
-        switch (getSample(previous, current).pick) {
-          case "a":
-            return previous;
-          default:
-            return current;
-        }
-      },
-      group[0]
-    );
-
-    const account = sample.bankAccount;
-    if (!balancePoints[account]) {
-      balancePoints[account] = [];
-    }
-
-    balancePoints[account].push({
-      timeStamp: sample.timeStamp,
-      bankAccount: sample.bankAccount,
-      balance: sample.balance,
-    });
-
-    return balancePoints;
-  }, {});
-
-  // sort the points by time
-  Object.keys(balancePoints).forEach((key) => {
-    const sortedPoints = balancePoints[key].sort((a, b) =>
-      b.timeStamp < a.timeStamp ? 1 : -1
-    );
-    balancePoints[key] = sortedPoints;
-  });
-
-  // get iterators for each group
-  const iterators = Object.keys(balancePoints).reduce<Record<string, number>>(
-    (its, key) => {
-      its[key] = 0;
-      return its;
-    },
-    {}
-  );
-
-  // fill any gaps in the datapoints using the last previously known balance value
-  const filledBalancePoints = generateYearWeeksForPeriod(
-    startTimeStamp,
-    endTimeStamp
-  ).reduce<BalancePoint[]>((filledPoints, weekToFill) => {
-    // fill this week's point for all groups
-    Object.keys(balancePoints).forEach((bankAccount) => {
-      const current = balancePoints[bankAccount][iterators[bankAccount]];
-      let balance = 0; // default to a balance of 0 if we don't know what to do
-
-      if (current && weekToFill === getYearWeek(current.timeStamp)) {
-        // we have data for this timestamp
-        balance = current.balance;
-        iterators[bankAccount]++;
-      } else if (iterators[bankAccount] > 0) {
-        // this timestamp doesn't have a datapoint use last known datapoint
-        const previous = balancePoints[bankAccount][iterators[bankAccount] - 1];
-        balance = previous.balance;
-      }
-
-      filledPoints.push({
-        timeStamp: weekToFill,
-        balance,
-        bankAccount,
-      });
-    });
-
-    return filledPoints;
-  }, []);
-
-  return filledBalancePoints;
-}
-
-/**
- * Generate a group key based on year-week
- */
-const groupByYearWeek: GroupKeyFn = (transaction) => {
-  return transaction.bankAccount + "-" + getYearWeek(transaction.timeStamp);
-};
-
-/**
- * Sample the datapoint with lowest balance
- */
-const sampleLowestBalance: SamplingFn = (a, b) => {
-  return { pick: a.balance < b.balance ? "a" : "b" };
-};
-
-/**
- * Get an identifying key given a timestamp - these keys are compared to determine if two timestamps belong to the same period
- */
-function getYearWeek(timeStamp: string): string;
-function getYearWeek(dateTime: DateTime): string;
-function getYearWeek(input: any): string {
-  let dateTime: DateTime;
-
-  if (typeof input === "string") {
-    dateTime = DateTime.fromISO(input);
-  } else {
-    dateTime = input;
-  }
-
-  return dateTime.toFormat("kkkk-'W'WW");
-}
-
-/**
- * Returns a set of periodic timestamps that fills the period between two timestamps
- * @param firstDataPoint
- * @param lastDataPoint
- */
-function generateYearWeeksForPeriod(
-  startTimeStamp: string,
-  endLastTimeStamp: string
-): string[] {
-  const yearWeeks = [];
-  let weekIterator = DateTime.fromISO(startTimeStamp);
-  const endDate = DateTime.fromISO(endLastTimeStamp);
-
-  while (weekIterator < endDate) {
-    yearWeeks.push(getYearWeek(weekIterator));
-    weekIterator = weekIterator.plus({ weeks: 1 });
-  }
-
-  return yearWeeks;
-}
-
-/**
- * Aggregates and sorts transactions
- * currently only by month
- * Heavy operation; may want to move this to a service worker in future
- */
-function aggregateTransactions(transactions: DenormalizedTransaction[]) {
-  const { aggregationMap, bankAccountAggregates } = aggregateTransactionsByKey(
-    transactions
-  );
-  return {
-    monthlyAggregations: Object.values(aggregationMap).sort((a, b) =>
-      b.yearMonth > a.yearMonth ? 1 : -1
-    ),
-    bankAccountAggregates,
-  };
-}
-
-const TOTAL_ACCOUNT_AGGREGATE = "Total";
-function aggregateTransactionsByKey(
-  transactions: DenormalizedTransaction[]
-): KeyedAggregationResult {
-  return transactions.reduce<KeyedAggregationResult>(
-    (aggregationResult, transaction) => {
-      const accountKey = getAccountKey(transaction);
-      const totalKey = getTotalKey(transaction);
-      const keyedAggregations = aggregationResult.aggregationMap;
-
-      const accountAggregation: MonthlyAggregation = keyedAggregations[
-        accountKey
-      ] || {
-        yearMonth: getYearMonthFromTimeStamp(transaction.timeStamp),
-        bankAccount: transaction.bankAccount,
-        incomeInZAR: 0,
-        expensesInZAR: 0,
-      };
-
-      const totalAggregation: MonthlyAggregation = keyedAggregations[
-        totalKey
-      ] || {
-        yearMonth: getYearMonthFromTimeStamp(transaction.timeStamp),
-        bankAccount: TOTAL_ACCOUNT_AGGREGATE,
-        incomeInZAR: 0,
-        expensesInZAR: 0,
-      };
-
-      if (transaction.amountInZAR > 0) {
-        accountAggregation.incomeInZAR += transaction.amountInZAR;
-        totalAggregation.incomeInZAR += transaction.amountInZAR;
-      } else {
-        accountAggregation.expensesInZAR += transaction.amountInZAR;
-        totalAggregation.expensesInZAR += transaction.amountInZAR;
-      }
-
-      keyedAggregations[accountKey] = accountAggregation;
-      keyedAggregations[totalKey] = totalAggregation;
-
-      const bankAccountAggregates = aggregationResult.bankAccountAggregates;
-      if (!bankAccountAggregates.includes(transaction.bankAccount)) {
-        bankAccountAggregates.push(transaction.bankAccount);
-      }
-      return { aggregationMap: keyedAggregations, bankAccountAggregates };
-    },
-    {
-      aggregationMap: {},
-      bankAccountAggregates: [TOTAL_ACCOUNT_AGGREGATE],
-    }
-  );
-}
-
-function getAccountKey(transaction: DenormalizedTransaction) {
-  return `${getYearMonthFromTimeStamp(transaction.timeStamp)}-${
-    transaction.bankAccount
-  }`;
-}
-
-function getTotalKey(transaction: DenormalizedTransaction) {
-  return `${getYearMonthFromTimeStamp(transaction.timeStamp)}-total`;
-}
-
 function appReducer(state: State, action: Action): State {
   switch (action.type) {
     case "clearData":
       return {
         ...state,
         transactions: {},
-        aggregateFilter: StaticBankAccountAggregateFilters.All,
+        accountFilter: StaticBankAccountFilters.All,
       };
 
     case "add":
       const newState: State = {
         ...state,
         transactions: { ...state.transactions },
-        aggregateFilter: StaticBankAccountAggregateFilters.All,
+        accountFilter: StaticBankAccountFilters.All,
       };
 
       const nullParseLog: InfoLogEvent[] = [];
@@ -558,7 +295,7 @@ function appReducer(state: State, action: Action): State {
     case "updateAggregateFilter":
       return {
         ...state,
-        aggregateFilter: action.filter,
+        accountFilter: action.filter,
       };
 
     case "updateViewIndex":
