@@ -29,16 +29,23 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
-  const XScale = d3
+  // Scales transform x and y data points to their equivalent places on the graph canvas
+  const xScale = d3
     .scaleUtc()
     .domain(xScaleDomain)
     .range([margin.left, innerWidth]);
 
-  const xTicks = XScale.ticks().map((date) =>
-    XScale(date) > margin.left && XScale(date) < innerWidth ? (
+  const yScale = d3
+    .scaleLinear()
+    .domain(yScaleDomain)
+    .range([innerHeight, margin.bottom]);
+
+  // Ticks are periodic lines (both gridlines and the small notches on the axes)
+  const xTicks = xScale.ticks().map((date) =>
+    xScale(date) > margin.left && xScale(date) < innerWidth ? (
       <g
         key={date.toISOString()}
-        transform={`translate(${XScale(date)},${innerHeight + margin.top})`}
+        transform={`translate(${xScale(date)},${innerHeight + margin.top})`}
       >
         <text fill="#858585" transform="rotate(45)">
           {jsDateToWeekTimestamp(date)}
@@ -48,16 +55,11 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
     ) : null
   );
 
-  const YScale = d3
-    .scaleLinear()
-    .domain(yScaleDomain)
-    .range([innerHeight, margin.bottom]);
-
-  const yTicks = YScale.ticks().map((balance) =>
-    YScale(balance) > 10 && YScale(balance) < innerHeight ? (
+  const yTicks = yScale.ticks().map((balance) =>
+    yScale(balance) > 10 && yScale(balance) < innerHeight ? (
       <g
         key={balance}
-        transform={`translate(${margin.left},${YScale(balance)})`}
+        transform={`translate(${margin.left},${yScale(balance)})`}
       >
         <text textAnchor="end" x="-10" y="5" fill="#858585">
           {balance / 1000}k
@@ -84,17 +86,15 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
     ) : null
   );
 
+  // Creates a path for the actual chart line given chart data
   const line = d3
     .line<BalanceDataPoint>()
     .x((date) => {
       const jsDate = weekTimestampToJSDate(date.timeStamp);
-      const scaleValue = XScale(jsDate);
-      if (isNaN(scaleValue)) {
-        console.log({ scaleValue, date, jsDate });
-      }
+      const scaleValue = xScale(jsDate);
       return scaleValue;
     })
-    .y((balancePoint) => YScale(balancePoint.balance));
+    .y((balancePoint) => yScale(balancePoint.balance));
 
   var accountColorPicker = d3
     .scaleOrdinal<string>()
