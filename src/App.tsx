@@ -81,6 +81,19 @@ function App() {
 
   const [store, dispatch] = useReducer(appReducer, INITIAL_STATE);
 
+  // basically a state selector
+  const bankAccounts = useMemo<string[]>(() => {
+    const accountSet = Object.values(store.transactions).reduce<Set<string>>(
+      (accountSet, transaction) => {
+        accountSet.add(transaction.bankAccount);
+        return accountSet;
+      },
+      new Set<string>()
+    );
+
+    return Array.from(accountSet);
+  }, [store.transactions]);
+
   const transactions = useMemo<DenormalizedTransaction[]>(() => {
     const thing = Object.values(store.transactions);
 
@@ -114,9 +127,10 @@ function App() {
   );
 
   // technically this is a state selector
-  const { monthlyAggregations, bankAccountAggregates } = useMemo<
-    AggregationResult
-  >(() => aggregateTransactions(filteredTransactions), [filteredTransactions]);
+  const { monthlyAggregations } = useMemo<AggregationResult>(
+    () => aggregateTransactions(filteredTransactions),
+    [filteredTransactions]
+  );
 
   const filteredAggregations = useMemo<MonthlyAggregation[]>(() => {
     const predicate = (aggregation: MonthlyAggregation) => {
@@ -144,16 +158,18 @@ function App() {
           })
         }
       >
-        {[StaticBankAccountFilters.All, ...bankAccountAggregates].map(
-          (aggregate) => (
-            <option key={aggregate} value={aggregate}>
-              {aggregate}
-            </option>
-          )
-        )}
+        {[
+          StaticBankAccountFilters.All,
+          StaticBankAccountFilters.Total,
+          ...bankAccounts,
+        ].map((aggregate) => (
+          <option key={aggregate} value={aggregate}>
+            {aggregate}
+          </option>
+        ))}
       </select>
     ),
-    [bankAccountAggregates, store.accountFilter]
+    [bankAccounts, store.accountFilter]
   );
 
   return (
