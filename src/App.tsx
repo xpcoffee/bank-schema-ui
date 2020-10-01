@@ -15,7 +15,7 @@ import {
 import { TransactionTable } from "./components/TransactionTable";
 import { AggregationTable } from "./components/AggregationTable";
 import { EventLog } from "./components/EventLog";
-import { BalanceView } from "./components/BalanceView";
+import { BalanceChart } from "./components/BalanceChart";
 import { AggregationResult, aggregateTransactions } from "./aggregation";
 import { StaticBankAccountFilters } from "./accounts";
 import {
@@ -190,7 +190,7 @@ function App() {
               })}
             </TabList>
             <TabPanel className="px-2">
-              <BalanceView balanceData={balanceData} />
+              <BalanceChart balanceData={balanceData} />
             </TabPanel>
             <TabPanel className="px-2">
               <AggregationTable aggregations={filteredAggregations} />

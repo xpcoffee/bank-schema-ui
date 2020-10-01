@@ -1,52 +1,22 @@
 import * as d3 from "d3";
 import React, { useMemo } from "react";
-import { BalancePoint } from "../types";
+import { BalanceDataPoint } from "../types";
 import { weekTimestampToJSDate, jsDateToWeekTimestamp } from "../time";
+import { BankAccountBalances } from "../balance";
+import { DateTime } from "luxon";
 
 interface Props {
-  balanceData: BalancePoint[];
+  balanceData: BankAccountBalances;
 }
 
-function minMaxDates(balanceData: BalancePoint[]): [Date, Date] {
-  if (balanceData.length === 0) {
-    return [new Date(), new Date()];
-  }
-  let minTimestamp = balanceData[0].timeStamp;
-  let maxTimestamp = balanceData[0].timeStamp;
-
-  balanceData.forEach((point) => {
-    if (point.timeStamp > maxTimestamp) {
-      maxTimestamp = point.timeStamp;
-    }
-
-    if (point.timeStamp < minTimestamp) {
-      minTimestamp = point.timeStamp;
-    }
-  });
-
-  return [
-    weekTimestampToJSDate(minTimestamp),
-    weekTimestampToJSDate(maxTimestamp),
-  ];
-}
-
-export const BalanceView = ({ balanceData }: Props) => {
+export const BalanceChart = ({ balanceData }: Props) => {
   const xScaleDomain = useMemo(() => minMaxDates(balanceData), [balanceData]);
-  const yScaleDomain = useMemo(() => {
-    const yAxisLowerBound = Math.min(
-      d3.min(balanceData, (d) => d.balance || 0) as number,
-      0
-    );
+  const yScaleDomain = useMemo(() => minMaxBalanceValues(balanceData), [
+    balanceData,
+  ]);
 
-    const yAxisUpperBound = d3.max(
-      balanceData,
-      (d) => d.balance || 0
-    ) as number;
-
-    return [yAxisLowerBound, yAxisUpperBound];
-  }, [balanceData]);
-
-  if (balanceData.length === 0) {
+  const accounts = Object.keys(balanceData);
+  if (accounts.length === 0) {
     return <div>No balance data to display. Please import data first.</div>;
   }
 
@@ -111,7 +81,7 @@ export const BalanceView = ({ balanceData }: Props) => {
   );
 
   const line = d3
-    .line<BalancePoint>()
+    .line<BalanceDataPoint>()
     .x((date) => {
       const jsDate = weekTimestampToJSDate(date.timeStamp);
       const scaleValue = XScale(jsDate);
@@ -142,12 +112,14 @@ export const BalanceView = ({ balanceData }: Props) => {
         y1={margin.bottom}
         y2={innerHeight}
       />
-      <path
-        fill="none"
-        strokeWidth="2"
-        stroke="steelblue"
-        d={line(balanceData) || undefined}
-      />
+      {accounts.map((account) => (
+        <path
+          fill="none"
+          strokeWidth="2"
+          stroke="steelblue"
+          d={line(balanceData[account]) || undefined}
+        />
+      ))}
       <g className="axis-labels">{xTicks}</g>
       <g className="axis-labels">{yTicks}</g>
     </svg>
@@ -155,3 +127,52 @@ export const BalanceView = ({ balanceData }: Props) => {
 
   return <div>{oldChart}</div>;
 };
+
+function minMaxDates(balanceData: BankAccountBalances): [Date, Date] {
+  const accounts = Object.keys(balanceData);
+  if (accounts.length === 0) {
+    const now = DateTime.utc();
+    return [now.toJSDate(), now.plus({ days: 1 }).toJSDate()];
+  }
+  const firstValue = balanceData[accounts[0]][0];
+
+  let minTimestamp = firstValue.timeStamp;
+  let maxTimestamp = firstValue.timeStamp;
+
+  accounts.forEach((account) => {
+    balanceData[account].forEach((point) => {
+      if (point.timeStamp > maxTimestamp) {
+        maxTimestamp = point.timeStamp;
+      }
+
+      if (point.timeStamp < minTimestamp) {
+        minTimestamp = point.timeStamp;
+      }
+    });
+  });
+
+  return [
+    weekTimestampToJSDate(minTimestamp),
+    weekTimestampToJSDate(maxTimestamp),
+  ];
+}
+
+function minMaxBalanceValues(
+  balanceData: BankAccountBalances
+): [number, number] {
+  const accounts = Object.keys(balanceData);
+  const yAxisLowerBound = Math.min(
+    ...accounts.map(
+      (account) => d3.min(balanceData[account], (d) => d.balance || 0) as number
+    ),
+    0
+  );
+
+  const yAxisUpperBound = Math.max(
+    ...accounts.map(
+      (account) => d3.max(balanceData[account], (d) => d.balance || 0) as number
+    )
+  );
+
+  return [yAxisLowerBound, yAxisUpperBound];
+}

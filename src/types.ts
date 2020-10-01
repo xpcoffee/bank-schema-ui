@@ -22,7 +22,7 @@ export interface KeyedFileUpdate extends Partial<KeyedFile> {
   key: string;
 }
 
-export interface BalancePoint
+export interface BalanceDataPoint
   extends Omit<
     Omit<Omit<DenormalizedTransaction, "amountInZAR">, "description">,
     "hash"

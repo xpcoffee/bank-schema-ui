@@ -1,13 +1,16 @@
 import { generateYearWeeksForPeriod, getYearWeek } from "./time";
-import { DenormalizedTransaction, BalancePoint } from "./types";
+import { DenormalizedTransaction, BalanceDataPoint } from "./types";
+
+// Map of bank accounts to their balance datapoints
+export type BankAccountBalances = Record<string, BalanceDataPoint[]>;
 
 export function getBankBalances(
   transactions: DenormalizedTransaction[],
   getSample: SamplingFn,
   getGroupKey: GroupKeyFn
-): BalancePoint[] {
+): BankAccountBalances {
   if (transactions.length === 0) {
-    return [];
+    return {};
   }
 
   // The beginning and end of the entire balance period
@@ -37,50 +40,52 @@ export function getBankBalances(
   );
 
   // build a set of points for the balance by taking a sample for each group
-  const balancePoints = Object.keys(groups).reduce<
-    Record<string, BalancePoint[]>
-  >((balancePoints, key) => {
-    const group = groups[key];
-    const sample = group.reduce<DenormalizedTransaction>(
-      (previous, current) => {
-        if (previous === undefined) {
-          return current;
-        }
-
-        switch (getSample(previous, current).pick) {
-          case "a":
-            return previous;
-          default:
+  // datapoints here are sparse: a datapoint might exist on one date for one account and not others
+  const sparseBalances = Object.keys(groups).reduce<BankAccountBalances>(
+    (balancePoints, key) => {
+      const group = groups[key];
+      const sample = group.reduce<DenormalizedTransaction>(
+        (previous, current) => {
+          if (previous === undefined) {
             return current;
-        }
-      },
-      group[0]
-    );
+          }
 
-    const account = sample.bankAccount;
-    if (!balancePoints[account]) {
-      balancePoints[account] = [];
-    }
+          switch (getSample(previous, current).pick) {
+            case "a":
+              return previous;
+            default:
+              return current;
+          }
+        },
+        group[0]
+      );
 
-    balancePoints[account].push({
-      timeStamp: sample.timeStamp,
-      bankAccount: sample.bankAccount,
-      balance: sample.balance,
-    });
+      const account = sample.bankAccount;
+      if (!balancePoints[account]) {
+        balancePoints[account] = [];
+      }
 
-    return balancePoints;
-  }, {});
+      balancePoints[account].push({
+        timeStamp: sample.timeStamp,
+        bankAccount: sample.bankAccount,
+        balance: sample.balance,
+      });
+
+      return balancePoints;
+    },
+    {}
+  );
 
   // sort the points by time
-  Object.keys(balancePoints).forEach((key) => {
-    const sortedPoints = balancePoints[key].sort((a, b) =>
+  Object.keys(sparseBalances).forEach((key) => {
+    const sortedPoints = sparseBalances[key].sort((a, b) =>
       b.timeStamp < a.timeStamp ? 1 : -1
     );
-    balancePoints[key] = sortedPoints;
+    sparseBalances[key] = sortedPoints;
   });
 
   // get iterators for each group
-  const iterators = Object.keys(balancePoints).reduce<Record<string, number>>(
+  const iterators = Object.keys(sparseBalances).reduce<Record<string, number>>(
     (its, key) => {
       its[key] = 0;
       return its;
@@ -89,13 +94,13 @@ export function getBankBalances(
   );
 
   // fill any gaps in the datapoints using the last previously known balance value
-  const filledBalancePoints = generateYearWeeksForPeriod(
+  const filledBalances = generateYearWeeksForPeriod(
     startTimeStamp,
     endTimeStamp
-  ).reduce<BalancePoint[]>((filledPoints, weekToFill) => {
+  ).reduce<BankAccountBalances>((filledPoints, weekToFill) => {
     // fill this week's point for all groups
-    Object.keys(balancePoints).forEach((bankAccount) => {
-      const current = balancePoints[bankAccount][iterators[bankAccount]];
+    Object.keys(sparseBalances).forEach((bankAccount) => {
+      const current = sparseBalances[bankAccount][iterators[bankAccount]];
       let balance = 0; // default to a balance of 0 if we don't know what to do
 
       if (current && weekToFill === getYearWeek(current.timeStamp)) {
@@ -104,11 +109,16 @@ export function getBankBalances(
         iterators[bankAccount]++;
       } else if (iterators[bankAccount] > 0) {
         // this timestamp doesn't have a datapoint use last known datapoint
-        const previous = balancePoints[bankAccount][iterators[bankAccount] - 1];
+        const previous =
+          sparseBalances[bankAccount][iterators[bankAccount] - 1];
         balance = previous.balance;
       }
 
-      filledPoints.push({
+      if (filledPoints[bankAccount] === undefined) {
+        filledPoints[bankAccount] = [];
+      }
+
+      filledPoints[bankAccount].push({
         timeStamp: weekToFill,
         balance,
         bankAccount,
@@ -116,9 +126,9 @@ export function getBankBalances(
     });
 
     return filledPoints;
-  }, []);
+  }, {});
 
-  return filledBalancePoints;
+  return filledBalances;
 }
 
 /**
