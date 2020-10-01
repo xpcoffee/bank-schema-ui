@@ -1,5 +1,5 @@
 import { FileType, Transaction } from "@xpcoffee/bank-schema-parser";
-import { InfoLogEvent, KeyedFileUpdate } from "./types";
+import { InfoLogEvent, KeyedFileUpdate } from "../types";
 
 export type Action =
   | {

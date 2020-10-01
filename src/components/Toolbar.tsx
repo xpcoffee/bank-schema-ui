@@ -5,7 +5,7 @@ import {
 } from "@xpcoffee/bank-schema-parser";
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Action } from "../actions";
+import { Action } from "../store/actions";
 import { getFileKey } from "../file";
 import { getCurrentIsoTimestamp } from "../time";
 import { InfoLogEvent, KeyedFile } from "../types";
