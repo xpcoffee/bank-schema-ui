@@ -1,4 +1,4 @@
-import { StaticBankAccountFilters } from "./accounts";
+import { StaticBankAccounts } from "./accounts";
 import { getYearMonthFromTimeStamp } from "./time";
 import { DenormalizedTransaction, MonthlyAggregation } from "./types";
 
@@ -41,7 +41,7 @@ function aggregateTransactionsByKey(
         totalKey
       ] || {
         yearMonth: getYearMonthFromTimeStamp(transaction.timeStamp),
-        bankAccount: StaticBankAccountFilters.Total,
+        bankAccount: StaticBankAccounts.Total,
         incomeInZAR: 0,
         expensesInZAR: 0,
       };
@@ -65,7 +65,7 @@ function aggregateTransactionsByKey(
     },
     {
       aggregationMap: {},
-      bankAccountAggregates: [StaticBankAccountFilters.Total],
+      bankAccountAggregates: [StaticBankAccounts.Total],
     }
   );
 }

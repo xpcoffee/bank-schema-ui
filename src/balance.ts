@@ -1,3 +1,4 @@
+import { StaticBankAccounts } from "./accounts";
 import { generateYearWeeksForPeriod, getYearWeek } from "./time";
 import { DenormalizedTransaction, BalanceDataPoint } from "./types";
 
@@ -128,7 +129,35 @@ export function getBankBalances(
     return filledPoints;
   }, {});
 
-  return filledBalances;
+  return addBalanceTotal(filledBalances);
+}
+
+// Adds a balance that totals the balances across other bank balances
+function addBalanceTotal(balances: BankAccountBalances): BankAccountBalances {
+  if (
+    balances[StaticBankAccounts.Total] || // only do work if there isn't already a total
+    Object.keys(balances).length === 0 // and if there's actually work to do
+  ) {
+    return balances;
+  }
+
+  const balancesCopy = Object.assign({}, balances);
+  const totalBalance: BalanceDataPoint[] = [];
+  Object.values(balancesCopy).forEach((accountBalance) => {
+    accountBalance.forEach((dataPoint, index) => {
+      if (totalBalance[index] === undefined) {
+        totalBalance[index] = {
+          bankAccount: StaticBankAccounts.Total,
+          balance: 0,
+          timeStamp: dataPoint.timeStamp,
+        };
+      }
+      totalBalance[index].balance += dataPoint.balance;
+    });
+  });
+
+  balancesCopy[StaticBankAccounts.Total] = totalBalance;
+  return balancesCopy;
 }
 
 /**

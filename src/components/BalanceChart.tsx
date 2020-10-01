@@ -4,12 +4,14 @@ import { BalanceDataPoint } from "../types";
 import { weekTimestampToJSDate, jsDateToWeekTimestamp } from "../time";
 import { BankAccountBalances } from "../balance";
 import { DateTime } from "luxon";
+import { StaticBankAccounts } from "../accounts";
 
 interface Props {
   balanceData: BankAccountBalances;
+  onlyTotal?: boolean; // only show Total
 }
 
-export const BalanceChart = ({ balanceData }: Props) => {
+export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
   const xScaleDomain = useMemo(() => minMaxDates(balanceData), [balanceData]);
   const yScaleDomain = useMemo(() => minMaxBalanceValues(balanceData), [
     balanceData,
@@ -131,14 +133,20 @@ export const BalanceChart = ({ balanceData }: Props) => {
           y1={margin.bottom}
           y2={innerHeight}
         />
-        {accounts.map((account) => (
-          <path
-            fill="none"
-            strokeWidth="2"
-            stroke={accountColorPicker(account)}
-            d={line(balanceData[account]) || undefined}
-          />
-        ))}
+        {accounts.map((account) => {
+          if (onlyTotal && account !== StaticBankAccounts.Total) {
+            return undefined;
+          }
+
+          return (
+            <path
+              fill="none"
+              strokeWidth="2"
+              stroke={accountColorPicker(account)}
+              d={line(balanceData[account]) || undefined}
+            />
+          );
+        })}
         <g className="axis-labels">{xTicks}</g>
         <g className="axis-labels">{yTicks}</g>
       </svg>
@@ -152,6 +160,7 @@ function minMaxDates(balanceData: BankAccountBalances): [Date, Date] {
     const now = DateTime.utc();
     return [now.toJSDate(), now.plus({ days: 1 }).toJSDate()];
   }
+  console.log({ balanceData });
   const firstValue = balanceData[accounts[0]][0];
 
   let minTimestamp = firstValue.timeStamp;

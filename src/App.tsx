@@ -8,7 +8,7 @@ import { AggregationTable } from "./components/AggregationTable";
 import { EventLog } from "./components/EventLog";
 import { BalanceChart } from "./components/BalanceChart";
 import { AggregationResult, aggregateTransactions } from "./aggregation";
-import { StaticBankAccountFilters } from "./accounts";
+import { StaticBankAccounts } from "./accounts";
 import {
   getBankBalances,
   sampleLowestBalance,
@@ -46,8 +46,8 @@ function App() {
   const filteredTransactions = useMemo<DenormalizedTransaction[]>(() => {
     const predicate = (aggregation: DenormalizedTransaction) => {
       if (
-        StaticBankAccountFilters.All === store.accountFilter ||
-        StaticBankAccountFilters.Total === store.accountFilter
+        StaticBankAccounts.All === store.accountFilter ||
+        StaticBankAccounts.Total === store.accountFilter
       ) {
         return true;
       }
@@ -75,7 +75,7 @@ function App() {
 
   const filteredAggregations = useMemo<MonthlyAggregation[]>(() => {
     const predicate = (aggregation: MonthlyAggregation) => {
-      if (StaticBankAccountFilters.All === store.accountFilter) {
+      if (StaticBankAccounts.All === store.accountFilter) {
         return true;
       }
       return store.accountFilter === aggregation.bankAccount;
@@ -100,8 +100,8 @@ function App() {
         }
       >
         {[
-          StaticBankAccountFilters.All,
-          StaticBankAccountFilters.Total,
+          StaticBankAccounts.All,
+          StaticBankAccounts.Total,
           ...bankAccounts,
         ].map((aggregate) => (
           <option key={aggregate} value={aggregate}>
@@ -153,7 +153,10 @@ function App() {
               })}
             </TabList>
             <TabPanel className="px-2">
-              <BalanceChart balanceData={balanceData} />
+              <BalanceChart
+                balanceData={balanceData}
+                onlyTotal={store.accountFilter === StaticBankAccounts.Total}
+              />
             </TabPanel>
             <TabPanel className="px-2">
               <AggregationTable aggregations={filteredAggregations} />

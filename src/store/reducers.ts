@@ -1,5 +1,5 @@
 import { FileType, Transaction } from "@xpcoffee/bank-schema-parser";
-import { StaticBankAccountFilters } from "../accounts";
+import { StaticBankAccounts } from "../accounts";
 import { toKeyedFile } from "../file";
 import { getCurrentIsoTimestamp } from "../time";
 import { DenormalizedTransaction, InfoLogEvent, KeyedFile } from "../types";
@@ -20,7 +20,7 @@ export type State = {
 
 export const INITIAL_STATE: State = {
   transactions: {},
-  accountFilter: StaticBankAccountFilters.All,
+  accountFilter: StaticBankAccounts.All,
   eventLog: [],
   selectedFiles: undefined,
   viewIndex: 0,
@@ -34,14 +34,14 @@ export function appReducer(state: State, action: Action): State {
       return {
         ...state,
         transactions: {},
-        accountFilter: StaticBankAccountFilters.All,
+        accountFilter: StaticBankAccounts.All,
       };
 
     case "add":
       const newState: State = {
         ...state,
         transactions: { ...state.transactions },
-        accountFilter: StaticBankAccountFilters.All,
+        accountFilter: StaticBankAccounts.All, // reset to view all accounts when new data is imported
       };
 
       const nullParseLog: InfoLogEvent[] = [];
