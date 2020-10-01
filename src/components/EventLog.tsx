@@ -11,7 +11,7 @@ export const EventLog = ({ events }: Props) => {
   }
 
   return (
-    <div style={{ overflowY: "auto", height: "200px" }}>
+    <div>
       <table className="tableAuto">
         <tbody>
           {events.map((event, index) => {

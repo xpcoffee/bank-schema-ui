@@ -3,6 +3,7 @@ import { StaticBankAccountFilters } from "../accounts";
 import { toKeyedFile } from "../file";
 import { getCurrentIsoTimestamp } from "../time";
 import { DenormalizedTransaction, InfoLogEvent, KeyedFile } from "../types";
+import { Views } from "../views";
 import { Action } from "./actions";
 
 type TransactionMap = Record<string, DenormalizedTransaction>;
@@ -14,6 +15,7 @@ export type State = {
   accountFilter: string;
   viewIndex: number;
   defaultFileType: FileType;
+  newEvents: boolean;
 };
 
 export const INITIAL_STATE: State = {
@@ -23,6 +25,7 @@ export const INITIAL_STATE: State = {
   selectedFiles: undefined,
   viewIndex: 0,
   defaultFileType: "FNB-Default",
+  newEvents: false,
 };
 
 export function appReducer(state: State, action: Action): State {
@@ -61,6 +64,10 @@ export function appReducer(state: State, action: Action): State {
         );
         return state;
       }, newState);
+
+      if (action.eventLogs.length + nullParseLog.length > 0) {
+        newState.newEvents = true;
+      }
 
       newState.eventLog = [
         ...action.eventLogs,
@@ -111,6 +118,8 @@ export function appReducer(state: State, action: Action): State {
     case "updateViewIndex":
       return {
         ...state,
+        newEvents:
+          Views[action.index].id === "eventLog" ? false : state.newEvents, // clear new event notification when moving to events tab
         viewIndex: action.index,
       };
 

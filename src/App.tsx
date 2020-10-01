@@ -15,41 +15,10 @@ import {
   groupByYearWeek,
 } from "./balance";
 import { appReducer, INITIAL_STATE } from "./store/reducers";
+import { Views } from "./views";
 
 function App() {
-  const views = useMemo<
-    {
-      id: string;
-      label: ({
-        numberOfTransactions,
-      }: {
-        numberOfTransactions?: number;
-      }) => string;
-    }[]
-  >(
-    () => [
-      {
-        id: "balance",
-        label: () => "Balance",
-      },
-      {
-        id: "aggregations",
-        label: () => "Aggregations",
-      },
-      {
-        id: "transactions",
-        label: ({ numberOfTransactions }) =>
-          `Transactions${
-            numberOfTransactions ? `(${numberOfTransactions})` : ""
-          }`,
-      },
-      {
-        id: "eventLog",
-        label: () => "Event log",
-      },
-    ],
-    []
-  );
+  // FIXME: there's gotta be a better way to do this - feels really clunky
 
   const [store, dispatch] = useReducer(appReducer, INITIAL_STATE);
 
@@ -162,17 +131,23 @@ function App() {
             onSelect={(index) => dispatch({ type: "updateViewIndex", index })}
           >
             <TabList className="flex flex-row mb-4 bg-gray-300">
-              {views.map((view, index) => {
+              {Views.map((view, index) => {
                 const isActive = store.viewIndex === index;
                 const pointer = isActive ? "" : " cursor-pointer";
                 const style = isActive ? " bg-white" : "";
+                const label = (function getLabel() {
+                  switch (view.id) {
+                    case "transactions":
+                      return view.label(filteredTransactions.length);
+                    case "eventLog":
+                      return view.label(store.newEvents);
+                    default:
+                      return view.label();
+                  }
+                })();
                 return (
                   <Tab key={index} className={"px-4 py-1" + pointer + style}>
-                    <h2 className="text-xl">
-                      {view.label({
-                        numberOfTransactions: filteredTransactions.length,
-                      })}
-                    </h2>
+                    <h2 className="text-xl">{label}</h2>
                   </Tab>
                 );
               })}
