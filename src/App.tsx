@@ -18,8 +18,6 @@ import { appReducer, INITIAL_STATE } from "./store/reducers";
 import { Views } from "./views";
 
 function App() {
-  // FIXME: there's gotta be a better way to do this - feels really clunky
-
   const [store, dispatch] = useReducer(appReducer, INITIAL_STATE);
 
   // basically a state selector

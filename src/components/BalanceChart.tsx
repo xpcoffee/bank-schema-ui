@@ -40,7 +40,9 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
         key={date.toISOString()}
         transform={`translate(${XScale(date)},${innerHeight + margin.top})`}
       >
-        <text transform="rotate(45)">{jsDateToWeekTimestamp(date)}</text>
+        <text fill="#858585" transform="rotate(45)">
+          {jsDateToWeekTimestamp(date)}
+        </text>
         <line x1="0" x2="0" y1="0" y2="5" transform="translate(0,-20)" />
       </g>
     ) : null
@@ -57,12 +59,12 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
         key={balance}
         transform={`translate(${margin.left},${YScale(balance)})`}
       >
-        <text textAnchor="end" x="-10" y="5">
-          {balance}
+        <text textAnchor="end" x="-10" y="5" fill="#858585">
+          {balance / 1000}k
         </text>
         <line
           strokeWidth="1"
-          stroke="black"
+          stroke="#A9A9A9"
           x1="0"
           x2="5"
           y1="0"
@@ -71,7 +73,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
         />
         <line
           strokeWidth="1"
-          stroke="gray"
+          stroke="#A9A9A9"
           className="gridline"
           x1="0"
           x2={innerWidth}
@@ -117,7 +119,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
       <svg width={width} height={height}>
         <line
           strokeWidth="1"
-          stroke="black"
+          stroke="#858585"
           className="axis"
           x1={margin.left}
           x2={margin.left + innerWidth}
@@ -126,13 +128,15 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
         />
         <line
           strokeWidth="1"
-          stroke="black"
+          stroke="#858585"
           className="axis"
           x1={margin.left}
           x2={margin.left}
           y1={margin.bottom}
           y2={innerHeight}
         />
+        <g className="axis-labels">{xTicks}</g>
+        <g className="axis-labels">{yTicks}</g>
         {accounts.map((account) => {
           if (onlyTotal && account !== StaticBankAccounts.Total) {
             return undefined;
@@ -147,8 +151,6 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
             />
           );
         })}
-        <g className="axis-labels">{xTicks}</g>
-        <g className="axis-labels">{yTicks}</g>
       </svg>
     </div>
   );
