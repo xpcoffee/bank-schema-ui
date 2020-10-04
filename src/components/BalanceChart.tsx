@@ -5,7 +5,6 @@ import { weekTimestampToJSDate, jsDateToWeekTimestamp } from "../time";
 import { BankAccountBalances } from "../balance";
 import { DateTime } from "luxon";
 import { StaticBankAccounts } from "../accounts";
-import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript";
 
 interface Props {
   balanceData: BankAccountBalances;
