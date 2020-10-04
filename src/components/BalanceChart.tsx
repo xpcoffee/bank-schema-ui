@@ -1,10 +1,11 @@
 import * as d3 from "d3";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { BalanceDataPoint } from "../types";
 import { weekTimestampToJSDate, jsDateToWeekTimestamp } from "../time";
 import { BankAccountBalances } from "../balance";
 import { DateTime } from "luxon";
 import { StaticBankAccounts } from "../accounts";
+import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript";
 
 interface Props {
   balanceData: BankAccountBalances;
@@ -22,9 +23,9 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
     return <div>No balance data to display. Please import data first.</div>;
   }
 
-  const margin = { top: 20, right: 30, bottom: 100, left: 100 };
+  const margin = { top: 20, right: 300, bottom: 100, left: 100 };
 
-  const width = 1000;
+  const width = 1200;
   const height = 600;
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
@@ -115,8 +116,8 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
     ]);
 
   function Tooltips({ data }: { data: BalanceDataPoint[][] }) {
-    const [display, setDisplay] = useState("none");
-    const [datapointIndex, setDataPointIndex] = useState(0);
+    const displayRef = useRef("none");
+    const [datapointIndex, setDatapointIndex] = useState(0);
 
     // use the first account's data to set up mouse listeners
     // the other accounts should have data sets that are the same size
@@ -133,48 +134,62 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
             xScale(weekTimestampToJSDate(b.timeStamp)) -
             xScale(weekTimestampToJSDate(a.timeStamp))
           }
-          onMouseOut={() => setDisplay("none")}
+          onMouseOut={() => (displayRef.current = "none")}
           onMouseOver={() => {
-            setDataPointIndex(listenerIndex);
-            setDisplay("block");
+            displayRef.current = "block";
+            setDatapointIndex(listenerIndex);
           }}
         ></rect>
       );
       return listener;
     });
 
-    const tooltips = data.map((accountData) => {
+    const circles = data.map((accountData) => {
       const datapoint = accountData[datapointIndex];
       const transform = `translate(${xScale(
         weekTimestampToJSDate(datapoint.timeStamp)
       )},${yScale(datapoint.balance)})`;
       const color = accountColorPicker(datapoint.bankAccount);
+
       return (
         <g
           key={`tooltip-${datapoint.bankAccount}`}
           pointerEvents="none"
-          display={display}
-          fontFamily="sans-serif"
-          fontSize="10"
-          textAnchor="middle"
+          display={displayRef.current}
           transform={transform}
         >
-          <rect x="-27" width="54" y="-30" height="20" fill="white"></rect>
-          <text y="-22" fill={color}>
-            {datapoint.bankAccount}
-          </text>
-          <text y="-12" fill={color}>
-            {datapoint.balance}
-          </text>
           <circle r="2.5" fill={color}></circle>
         </g>
       );
     });
 
+    const tooltipData = data.reduce<BalanceDataPoint[]>(
+      (texts, accountData) => {
+        texts.push(accountData[datapointIndex]);
+        return texts;
+      },
+      []
+    );
     return (
       <>
         {mouseListeners}
-        {tooltips}
+        {circles}
+        {tooltipData.map((datapoint, index) => {
+          const account = datapoint.bankAccount;
+          const color = accountColorPicker(account);
+          return (
+            <g
+              key={`tooltip-text-${account}`}
+              transform={`translate(${innerWidth + margin.left}, ${
+                margin.top
+              })`}
+            >
+              <text fill={color} transform={`translate(0,${index * 20})`}>
+                {account}: {datapoint.balance}
+              </text>
+            </g>
+          );
+        })}
       </>
     );
   }
