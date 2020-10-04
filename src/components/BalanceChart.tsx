@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { BalanceDataPoint } from "../types";
 import { weekTimestampToJSDate, jsDateToWeekTimestamp } from "../time";
 import { BankAccountBalances } from "../balance";
@@ -114,8 +114,73 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
       "orange",
     ]);
 
+  function Tooltips({ data }: { data: BalanceDataPoint[][] }) {
+    const [display, setDisplay] = useState("none");
+    const [datapointIndex, setDataPointIndex] = useState(0);
+
+    // use the first account's data to set up mouse listeners
+    // the other accounts should have data sets that are the same size
+    let index = 0;
+    const mouseListeners = d3.pairs(data[0], (a, b) => {
+      const listenerIndex = index;
+      index++;
+      const listener = (
+        <rect
+          key={a.timeStamp + "-" + b.timeStamp}
+          x={xScale(weekTimestampToJSDate(a.timeStamp))}
+          height={height}
+          width={
+            xScale(weekTimestampToJSDate(b.timeStamp)) -
+            xScale(weekTimestampToJSDate(a.timeStamp))
+          }
+          onMouseOut={() => setDisplay("none")}
+          onMouseOver={() => {
+            setDataPointIndex(listenerIndex);
+            setDisplay("block");
+          }}
+        ></rect>
+      );
+      return listener;
+    });
+
+    const tooltips = data.map((accountData) => {
+      const datapoint = accountData[datapointIndex];
+      const transform = `translate(${xScale(
+        weekTimestampToJSDate(datapoint.timeStamp)
+      )},${yScale(datapoint.balance)})`;
+      const color = accountColorPicker(datapoint.bankAccount);
+      return (
+        <g
+          key={`tooltip-${datapoint.bankAccount}`}
+          pointerEvents="none"
+          display={display}
+          fontFamily="sans-serif"
+          fontSize="10"
+          textAnchor="middle"
+          transform={transform}
+        >
+          <rect x="-27" width="54" y="-30" height="20" fill="white"></rect>
+          <text y="-22" fill={color}>
+            {datapoint.bankAccount}
+          </text>
+          <text y="-12" fill={color}>
+            {datapoint.balance}
+          </text>
+          <circle r="2.5" fill={color}></circle>
+        </g>
+      );
+    });
+
+    return (
+      <>
+        {mouseListeners}
+        {tooltips}
+      </>
+    );
+  }
+
   return (
-    <div>
+    <div id="chart">
       <svg width={width} height={height}>
         <line
           strokeWidth="1"
@@ -144,6 +209,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
 
           return (
             <path
+              key={`chart-${account}`}
               fill="none"
               strokeWidth="2"
               stroke={accountColorPicker(account)}
@@ -151,6 +217,9 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
             />
           );
         })}
+        <g fill="none" pointerEvents="all">
+          <Tooltips data={Object.values(balanceData)} />
+        </g>
       </svg>
     </div>
   );
@@ -162,7 +231,6 @@ function minMaxDates(balanceData: BankAccountBalances): [Date, Date] {
     const now = DateTime.utc();
     return [now.toJSDate(), now.plus({ days: 1 }).toJSDate()];
   }
-  console.log({ balanceData });
   const firstValue = balanceData[accounts[0]][0];
 
   let minTimestamp = firstValue.timeStamp;
