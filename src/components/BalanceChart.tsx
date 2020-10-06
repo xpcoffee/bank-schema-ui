@@ -18,6 +18,19 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
   ]);
 
   const accounts = Object.keys(balanceData);
+  const filteredAccounts = useMemo(() => {
+    if (onlyTotal) {
+      return [StaticBankAccounts.Total];
+    }
+
+    // don't show the total if there's only one other bank account
+    if (accounts.length === 2) {
+      return accounts.filter((account) => account !== StaticBankAccounts.Total);
+    }
+
+    return accounts;
+  }, [accounts, onlyTotal]);
+
   if (accounts.length === 0) {
     return <div>No balance data to display. Please import data first.</div>;
   }
@@ -114,37 +127,40 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
       "orange",
     ]);
 
-  function Tooltips({ data }: { data: BalanceDataPoint[][] }) {
+  function Tooltips() {
     const displayRef = useRef("none");
     const [datapointIndex, setDatapointIndex] = useState(0);
 
     // use the first account's data to set up mouse listeners
     // the other accounts should have data sets that are the same size
     let index = 0;
-    const mouseListeners = d3.pairs(data[0], (a, b) => {
-      const listenerIndex = index;
-      index++;
-      const listener = (
-        <rect
-          key={a.timeStamp + "-" + b.timeStamp}
-          x={xScale(weekTimestampToJSDate(a.timeStamp))}
-          height={height}
-          width={
-            xScale(weekTimestampToJSDate(b.timeStamp)) -
-            xScale(weekTimestampToJSDate(a.timeStamp))
-          }
-          onMouseOut={() => (displayRef.current = "none")}
-          onMouseOver={() => {
-            displayRef.current = "block";
-            setDatapointIndex(listenerIndex);
-          }}
-        ></rect>
-      );
-      return listener;
-    });
+    const mouseListeners = d3.pairs(
+      balanceData[StaticBankAccounts.Total],
+      (a, b) => {
+        const listenerIndex = index;
+        index++;
+        const listener = (
+          <rect
+            key={a.timeStamp + "-" + b.timeStamp}
+            x={xScale(weekTimestampToJSDate(a.timeStamp))}
+            height={height}
+            width={
+              xScale(weekTimestampToJSDate(b.timeStamp)) -
+              xScale(weekTimestampToJSDate(a.timeStamp))
+            }
+            onMouseOut={() => (displayRef.current = "none")}
+            onMouseOver={() => {
+              displayRef.current = "block";
+              setDatapointIndex(listenerIndex);
+            }}
+          ></rect>
+        );
+        return listener;
+      }
+    );
 
-    const circles = data.map((accountData) => {
-      const datapoint = accountData[datapointIndex];
+    const circles = filteredAccounts.map((account) => {
+      const datapoint = balanceData[account][datapointIndex];
       const transform = `translate(${xScale(
         weekTimestampToJSDate(datapoint.timeStamp)
       )},${yScale(datapoint.balance)})`;
@@ -162,13 +178,14 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
       );
     });
 
-    const tooltipData = data.reduce<BalanceDataPoint[]>(
-      (texts, accountData) => {
-        texts.push(accountData[datapointIndex]);
+    const tooltipData = filteredAccounts.reduce<BalanceDataPoint[]>(
+      (texts, account) => {
+        texts.push(balanceData[account][datapointIndex]);
         return texts;
       },
       []
     );
+
     return (
       <>
         {mouseListeners}
@@ -216,7 +233,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
         />
         <g className="axis-labels">{xTicks}</g>
         <g className="axis-labels">{yTicks}</g>
-        {accounts.map((account) => {
+        {filteredAccounts.map((account) => {
           if (onlyTotal && account !== StaticBankAccounts.Total) {
             return undefined;
           }
@@ -232,7 +249,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
           );
         })}
         <g fill="none" pointerEvents="all">
-          <Tooltips data={Object.values(balanceData)} />
+          <Tooltips />
         </g>
       </svg>
     </div>
