@@ -35,7 +35,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
     return <div>No balance data to display. Please import data first.</div>;
   }
 
-  const margin = { top: 20, right: 300, bottom: 100, left: 100 };
+  const margin = { top: 20, right: 100, bottom: 300, left: 100 };
 
   const width = 1200;
   const height = 600;
@@ -51,7 +51,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
   const yScale = d3
     .scaleLinear()
     .domain(yScaleDomain)
-    .range([innerHeight, margin.bottom]);
+    .range([innerHeight, margin.top]);
 
   // Ticks are periodic lines (both gridlines and the small notches on the axes)
   const xTicks = xScale.ticks().map((date) =>
@@ -128,8 +128,8 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
     ]);
 
   function Tooltips() {
-    const displayRef = useRef("none");
     const [datapointIndex, setDatapointIndex] = useState(0);
+    const [display, setDisplay] = useState("none");
 
     // use the first account's data to set up mouse listeners
     // the other accounts should have data sets that are the same size
@@ -143,14 +143,16 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
           <rect
             key={a.timeStamp + "-" + b.timeStamp}
             x={xScale(weekTimestampToJSDate(a.timeStamp))}
-            height={height}
+            height={innerHeight}
             width={
               xScale(weekTimestampToJSDate(b.timeStamp)) -
               xScale(weekTimestampToJSDate(a.timeStamp))
             }
-            onMouseOut={() => (displayRef.current = "none")}
+            onMouseOut={() => {
+              setDisplay("none");
+            }}
             onMouseOver={() => {
-              displayRef.current = "block";
+              setDisplay("block");
               setDatapointIndex(listenerIndex);
             }}
           ></rect>
@@ -167,14 +169,14 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
       const color = accountColorPicker(datapoint.bankAccount);
 
       return (
-        <g
+        <circle
+          r="2.5"
+          fill={color}
           key={`tooltip-${datapoint.bankAccount}`}
           pointerEvents="none"
-          display={displayRef.current}
+          display={display}
           transform={transform}
-        >
-          <circle r="2.5" fill={color}></circle>
-        </g>
+        ></circle>
       );
     });
 
@@ -186,6 +188,14 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
       []
     );
 
+    const textWidth = 14;
+    const tooltipAccountWidth =
+      Math.max(...filteredAccounts.map((a) => a.length)) * textWidth;
+    const tooltipBalanceWidth =
+      Math.max(
+        ...tooltipData.map((d) => d.balance.toFixed(2).toString().length)
+      ) * textWidth;
+
     return (
       <>
         {mouseListeners}
@@ -196,13 +206,21 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
           return (
             <g
               key={`tooltip-text-${account}`}
-              transform={`translate(${innerWidth + margin.left}, ${
-                margin.top
+              transform={`translate(${margin.left}, ${
+                margin.top + innerHeight + 100
               })`}
             >
-              <text fill={color} transform={`translate(0,${index * 20})`}>
-                {account}: {datapoint.balance}
-              </text>
+              <g transform={`translate(0,${index * 20})`}>
+                <text fill={color}>{account}: </text>
+                <text
+                  fill={color}
+                  textAnchor="end"
+                  x={tooltipAccountWidth}
+                  width={tooltipBalanceWidth}
+                >
+                  {datapoint.balance.toFixed(2)}
+                </text>
+              </g>
             </g>
           );
         })}
@@ -228,7 +246,7 @@ export const BalanceChart = ({ balanceData, onlyTotal = false }: Props) => {
           className="axis"
           x1={margin.left}
           x2={margin.left}
-          y1={margin.bottom}
+          y1={margin.top}
           y2={innerHeight}
         />
         <g className="axis-labels">{xTicks}</g>
