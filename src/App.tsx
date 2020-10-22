@@ -112,31 +112,12 @@ function App() {
     [bankAccounts, store.accountFilter]
   );
 
-  const BoomButton = () => {
-    const [trigger, setTrigger] = useState(false);
-
-    if (trigger) {
-      throw new Error("BOOM");
-    }
-
-    return (
-      <button
-        onClick={() => {
-          setTrigger(true);
-        }}
-      >
-        BOOM
-      </button>
-    );
-  };
-
   return (
     <div className="App flex items-stretch flex-col">
       <header className="bg-gray-700 p-2 flex items-center">
         <h1 className="text-2xl text-white">bank-schema</h1>
       </header>
       <AppErrorBoundary appState={store}>
-        <BoomButton />
         <div className="flex flex-1 flex-col-reverse lg:flex-row justify-between">
           <div className="flex flex-1 flex-col">
             <div className="p-2 bg-gray-300">
