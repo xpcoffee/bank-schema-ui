@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useReducer } from "react";
+import React, { useCallback, useMemo, useReducer, useState } from "react";
 import "./App.css";
 import { Toolbar } from "./components/Toolbar";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
@@ -16,6 +16,7 @@ import {
 } from "./balance";
 import { appReducer, INITIAL_STATE } from "./store/reducers";
 import { Views } from "./views";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
 function App() {
   const [store, dispatch] = useReducer(appReducer, INITIAL_STATE);
@@ -111,68 +112,89 @@ function App() {
     [bankAccounts, store.accountFilter]
   );
 
+  const BoomButton = () => {
+    const [trigger, setTrigger] = useState(false);
+
+    if (trigger) {
+      throw new Error("BOOM");
+    }
+
+    return (
+      <button
+        onClick={() => {
+          setTrigger(true);
+        }}
+      >
+        BOOM
+      </button>
+    );
+  };
+
   return (
     <div className="App flex items-stretch flex-col">
       <header className="bg-gray-700 p-2 flex items-center">
         <h1 className="text-2xl text-white">bank-schema</h1>
       </header>
-      <div className="flex flex-1 flex-col-reverse lg:flex-row justify-between">
-        <div className="flex flex-1 flex-col">
-          <div className="p-2 bg-gray-300">
-            <h2 className="text-xl">Filters</h2>
-            <label className="flex">
-              Bank/Account
-              <div>{getAccountFilterSelect()}</div>
-            </label>
+      <AppErrorBoundary appState={store}>
+        <BoomButton />
+        <div className="flex flex-1 flex-col-reverse lg:flex-row justify-between">
+          <div className="flex flex-1 flex-col">
+            <div className="p-2 bg-gray-300">
+              <h2 className="text-xl">Filters</h2>
+              <label className="flex">
+                Bank/Account
+                <div>{getAccountFilterSelect()}</div>
+              </label>
+            </div>
+            <Tabs
+              onSelect={(index) => dispatch({ type: "updateViewIndex", index })}
+            >
+              <TabList className="flex flex-row mb-4 bg-gray-300">
+                {Views.map((view, index) => {
+                  const isActive = store.viewIndex === index;
+                  const pointer = isActive ? "" : " cursor-pointer";
+                  const style = isActive ? " bg-white" : "";
+                  const label = (function getLabel() {
+                    switch (view.id) {
+                      case "transactions":
+                        return view.label(filteredTransactions.length);
+                      case "eventLog":
+                        return view.label(store.newEvents);
+                      default:
+                        return view.label();
+                    }
+                  })();
+                  return (
+                    <Tab key={index} className={"px-4 py-1" + pointer + style}>
+                      <h2 className="text-xl">{label}</h2>
+                    </Tab>
+                  );
+                })}
+              </TabList>
+              <TabPanel className="px-2">
+                <BalanceChart
+                  balanceData={balanceData}
+                  onlyTotal={store.accountFilter === StaticBankAccounts.Total}
+                />
+              </TabPanel>
+              <TabPanel className="px-2">
+                <AggregationTable aggregations={filteredAggregations} />
+              </TabPanel>
+              <TabPanel className="px-2">
+                <TransactionTable transactions={filteredTransactions} />
+              </TabPanel>
+              <TabPanel className="px-2">
+                <EventLog events={store.eventLog} />
+              </TabPanel>
+            </Tabs>
           </div>
-          <Tabs
-            onSelect={(index) => dispatch({ type: "updateViewIndex", index })}
-          >
-            <TabList className="flex flex-row mb-4 bg-gray-300">
-              {Views.map((view, index) => {
-                const isActive = store.viewIndex === index;
-                const pointer = isActive ? "" : " cursor-pointer";
-                const style = isActive ? " bg-white" : "";
-                const label = (function getLabel() {
-                  switch (view.id) {
-                    case "transactions":
-                      return view.label(filteredTransactions.length);
-                    case "eventLog":
-                      return view.label(store.newEvents);
-                    default:
-                      return view.label();
-                  }
-                })();
-                return (
-                  <Tab key={index} className={"px-4 py-1" + pointer + style}>
-                    <h2 className="text-xl">{label}</h2>
-                  </Tab>
-                );
-              })}
-            </TabList>
-            <TabPanel className="px-2">
-              <BalanceChart
-                balanceData={balanceData}
-                onlyTotal={store.accountFilter === StaticBankAccounts.Total}
-              />
-            </TabPanel>
-            <TabPanel className="px-2">
-              <AggregationTable aggregations={filteredAggregations} />
-            </TabPanel>
-            <TabPanel className="px-2">
-              <TransactionTable transactions={filteredTransactions} />
-            </TabPanel>
-            <TabPanel className="px-2">
-              <EventLog events={store.eventLog} />
-            </TabPanel>
-          </Tabs>
+          <Toolbar
+            selectedFiles={store.selectedFiles}
+            dispatch={dispatch}
+            defaultFileType={store.defaultFileType}
+          />
         </div>
-        <Toolbar
-          selectedFiles={store.selectedFiles}
-          dispatch={dispatch}
-          defaultFileType={store.defaultFileType}
-        />
-      </div>
+      </AppErrorBoundary>
     </div>
   );
 }

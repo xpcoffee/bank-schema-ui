@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { BalanceDataPoint } from "../types";
 import { weekTimestampToJSDate, jsDateToWeekTimestamp } from "../time";
 import { BankAccountBalances } from "../balance";
