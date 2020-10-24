@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Bank Schema UI",
+  "name": "A UI for visualizing and manipulating bank-schema data",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
