@@ -52,7 +52,7 @@
     "@types/react": "^16.9.49",
     "@types/react-dom": "^16.9.8",
     "@types/react-tabs": "^2.3.2",
-    "@xpcoffee/bank-schema-parser": "^1.2.4",
+    "@xpcoffee/bank-schema-parser": "^1.2.6",
     "babel-loader": "^8.2.2",
     "clean-webpack-plugin": "^3.0.0",
     "copy-webpack-plugin": "^7.0.0",
