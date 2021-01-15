@@ -76,7 +76,7 @@ export const TransactionTable = ({ transactions }: Props) => {
                   {transaction.description}
                 </td>
                 <td className={"border px-4 text-right" + shadeClass}>
-                  {transaction.amountInZAR.toFixed(2)}
+                  {transaction.amount.toFixed(2)}
                 </td>
                 <td className={"border px-4 text-right" + shadeClass}>
                   {transaction.balance.toFixed(2)}

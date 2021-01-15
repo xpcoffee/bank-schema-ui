@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useReducer } from "react";
-// import "./App.css";
+import "./App.css";
 import { Toolbar } from "./components/Toolbar";
 import { Tabs, TabList, Tab, TabPanel } from "react-tabs";
 import { DenormalizedTransaction, MonthlyAggregation } from "./types";
@@ -114,9 +114,6 @@ function App() {
 
   return (
     <div className="App flex items-stretch flex-col">
-      <header className="bg-gray-700 p-2 flex items-center">
-        <h1 className="text-2xl text-white">bank-schema</h1>
-      </header>
       <AppErrorBoundary appState={store}>
         <div className="flex flex-1 flex-col-reverse lg:flex-row justify-between">
           <div className="flex flex-1 flex-col">
@@ -176,6 +173,13 @@ function App() {
           />
         </div>
       </AppErrorBoundary>
+
+      <div className="bg-gray-300 p-2 px-4 flex items-center justify-between">
+        <h1 className="text-2xl">bank-schema 2</h1>
+        <a href="https://github.com/xpcoffee/bank-schema-ui">
+          @xpcoffee/bank-schema-ui
+        </a>
+      </div>
     </div>
   );
 }

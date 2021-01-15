@@ -46,12 +46,12 @@ function aggregateTransactionsByKey(
         expensesInZAR: 0,
       };
 
-      if (transaction.amountInZAR > 0) {
-        accountAggregation.incomeInZAR += transaction.amountInZAR;
-        totalAggregation.incomeInZAR += transaction.amountInZAR;
+      if (transaction.amount > 0) {
+        accountAggregation.incomeInZAR += transaction.amount;
+        totalAggregation.incomeInZAR += transaction.amount;
       } else {
-        accountAggregation.expensesInZAR += transaction.amountInZAR;
-        totalAggregation.expensesInZAR += transaction.amountInZAR;
+        accountAggregation.expensesInZAR += transaction.amount;
+        totalAggregation.expensesInZAR += transaction.amount;
       }
 
       keyedAggregations[accountKey] = accountAggregation;
